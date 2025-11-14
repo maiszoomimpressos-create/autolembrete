@@ -68,7 +68,7 @@ const MainHeader: React.FC = () => {
         <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-gray-800 dark:border-gray-700">
           <div className="py-2">
             <button
-              onClick={() => handleMenuItemClick('/settings?tab=profile')}
+              onClick={() => handleMenuItemClick('/settings/profile')} // Alterado para a rota aninhada
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
             >
               <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -105,7 +105,7 @@ const MainHeader: React.FC = () => {
           </div>
           <nav className="hidden md:flex space-x-2 lg:space-x-8">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
               const Icon = item.icon;
               return (
                 <Button
