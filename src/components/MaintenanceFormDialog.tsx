@@ -37,6 +37,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     cost: recordToEdit?.cost || 0,
     status: recordToEdit?.status || 'Concluído',
     nextMileage: recordToEdit?.nextMileage || undefined,
+    nextDate: recordToEdit?.nextDate || undefined, // Adicionado
   });
 
   React.useEffect(() => {
@@ -50,6 +51,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         cost: recordToEdit.cost,
         status: recordToEdit.status,
         nextMileage: recordToEdit.nextMileage || undefined,
+        nextDate: recordToEdit.nextDate || undefined, // Adicionado
       });
     } else {
       setFormData({
@@ -61,6 +63,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         cost: 0,
         status: 'Concluído',
         nextMileage: undefined,
+        nextDate: undefined, // Adicionado
       });
     }
   }, [recordToEdit, isOpen, currentMileage]);
@@ -69,7 +72,9 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     const { id, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [id]: id === 'mileage' || id === 'cost' || id === 'nextMileage' ? parseFloat(value) || 0 : value,
+      [id]: (id === 'mileage' || id === 'cost' || id === 'nextMileage') 
+            ? (parseFloat(value) || 0) 
+            : value,
     }));
   };
 
@@ -94,6 +99,12 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     // Validação de KM de alerta
     if (formData.nextMileage && formData.nextMileage <= formData.mileage) {
         showError('O KM de Alerta deve ser maior que o KM da manutenção atual.');
+        return;
+    }
+    
+    // Validação de Data de Alerta
+    if (formData.nextDate && new Date(formData.nextDate) <= new Date(formData.date)) {
+        showError('A Data de Alerta deve ser posterior à data da manutenção atual.');
         return;
     }
 
@@ -231,8 +242,21 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
               className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
             />
           </div>
+          
+          {/* Campo de Data de Alerta (Novo) */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="nextDate" className="text-right dark:text-gray-300">Data de Alerta</Label>
+            <Input
+              id="nextDate"
+              type="date"
+              value={formData.nextDate || ''}
+              onChange={handleChange}
+              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+          </div>
+          
           <p className="col-span-4 text-xs text-gray-500 dark:text-gray-400 -mt-2">
-            Opcional. Defina o KM para ser alertado sobre a próxima ocorrência desta manutenção.
+            Opcional. Defina o KM e/ou a Data para ser alertado sobre a próxima ocorrência desta manutenção.
           </p>
 
           <div className="grid gap-2">

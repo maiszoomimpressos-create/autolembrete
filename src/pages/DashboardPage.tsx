@@ -4,7 +4,7 @@ import VehicleSummary from '@/components/VehicleSummary';
 import MonthlySpendingChart from '@/components/MonthlySpendingChart';
 import FuelEfficiencyChart from '@/components/FuelEfficiencyChart';
 import MileageInputForm from '@/components/MileageInputForm';
-import { DollarSign, Clock, TrendingUp, AlertTriangle, Gauge } from 'lucide-react';
+import { DollarSign, Clock, TrendingUp, AlertTriangle, Gauge, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFuelingMetrics } from '@/hooks/useFuelingMetrics';
 import { useFuelingRecords } from '@/hooks/useFuelingRecords';
@@ -12,7 +12,8 @@ import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
 import { useMaintenanceMetrics } from '@/hooks/useMaintenanceMetrics';
 import { useMileageAlerts } from '@/hooks/useMileageAlerts';
 import { useMileageRecords } from '@/hooks/useMileageRecords';
-import { useLastMaintenanceDate } from '@/hooks/useLastMaintenanceDate'; // Novo Import
+import { useLastMaintenanceDate } from '@/hooks/useLastMaintenanceDate';
+import { useDateAlerts } from '@/hooks/useDateAlerts'; // Novo Import
 
 const DashboardPage: React.FC = () => {
   // Dados de Abastecimento
@@ -25,10 +26,13 @@ const DashboardPage: React.FC = () => {
   // Dados de Manutenção
   const { records: maintenanceRecords } = useMaintenanceRecords();
   const { totalCost, pendingCount, nextMaintenance } = useMaintenanceMetrics(maintenanceRecords);
-  const lastServiceDate = useLastMaintenanceDate(maintenanceRecords); // Usando o novo hook
+  const lastServiceDate = useLastMaintenanceDate(maintenanceRecords);
   
-  // Alertas de KM (Agora usa o KM atual do useMileageRecords)
+  // Alertas de KM
   const { alerts: mileageAlerts } = useMileageAlerts(maintenanceRecords, currentMileage);
+  
+  // Alertas de Data (Novo)
+  const { alerts: dateAlerts } = useDateAlerts(maintenanceRecords);
 
   const efficiencyValue = averageEfficiency !== null 
     ? `${averageEfficiency} km/l` 
@@ -53,7 +57,7 @@ const DashboardPage: React.FC = () => {
       {/* Resumo do Veículo */}
       <VehicleSummary 
         currentMileage={currentMileage} 
-        lastServiceDate={lastServiceDate} // Passando a data real
+        lastServiceDate={lastServiceDate}
       />
 
       {/* Cartões de Métricas */}
@@ -134,6 +138,22 @@ const DashboardPage: React.FC = () => {
                       </span>
                     </li>
                   ))}
+                  
+                  {/* Alertas de Data */}
+                  {dateAlerts.map(alert => (
+                    <li 
+                      key={alert.id} 
+                      className={`flex items-center ${alert.status === 'Atrasado' ? 'text-red-600' : 'text-yellow-600'}`}
+                    >
+                      <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">
+                        {alert.type}: {alert.status === 'Atrasado' 
+                          ? `Vencido há ${alert.daysRemaining} dias (Data: ${new Date(alert.nextDate).toLocaleDateString('pt-BR')})` 
+                          : `Vence em ${alert.daysRemaining} dias (Data: ${new Date(alert.nextDate).toLocaleDateString('pt-BR')})`}
+                      </span>
+                    </li>
+                  ))}
+
 
                   {/* Alerta de Próxima Manutenção (Data) */}
                   {nextMaintenance && (
@@ -144,7 +164,7 @@ const DashboardPage: React.FC = () => {
                   )}
                   
                   {/* Placeholder de sucesso */}
-                  {pendingCount === 0 && mileageAlerts.length === 0 && !nextMaintenance && (
+                  {pendingCount === 0 && mileageAlerts.length === 0 && dateAlerts.length === 0 && !nextMaintenance && (
                     <li className="flex items-center text-green-500">
                       <TrendingUp className="w-4 h-4 mr-2" />
                       Seu veículo está em dia!
