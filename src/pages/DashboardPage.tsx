@@ -4,7 +4,7 @@ import VehicleSummary from '@/components/VehicleSummary';
 import MonthlySpendingChart from '@/components/MonthlySpendingChart';
 import FuelEfficiencyChart from '@/components/FuelEfficiencyChart';
 import MileageInputForm from '@/components/MileageInputForm';
-import { DollarSign, Clock, TrendingUp, AlertTriangle, Gauge, Calendar } from 'lucide-react';
+import { DollarSign, Clock, TrendingUp, AlertTriangle, Gauge, Calendar, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFuelingMetrics } from '@/hooks/useFuelingMetrics';
 import { useFuelingRecords } from '@/hooks/useFuelingRecords';
