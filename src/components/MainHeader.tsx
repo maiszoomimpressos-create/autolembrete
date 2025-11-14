@@ -289,11 +289,10 @@ const MainHeader: React.FC = () => {
             
             {/* Botão de Registro de KM Rápido */}
             <Button
-              // Em mobile, usa size="icon" e variant="outline"
-              // Em desktop, usa variant="default" (azul) para destaque
-              variant="outline"
-              size="icon"
-              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-700 h-9 w-9 sm:h-10 sm:w-auto sm:!bg-blue-600 sm:hover:!bg-blue-700 sm:text-white sm:dark:!bg-blue-700 sm:dark:hover:!bg-blue-800 sm:border-blue-600"
+              // Estilo aprimorado: Fundo azul forte em desktop, ícone em mobile
+              variant="default"
+              size="sm"
+              className="cursor-pointer whitespace-nowrap !rounded-button h-9 w-9 sm:h-10 sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
               onClick={() => setIsMileageDialogOpen(true)}
             >
               <Gauge className="w-4 h-4 sm:mr-2" />
