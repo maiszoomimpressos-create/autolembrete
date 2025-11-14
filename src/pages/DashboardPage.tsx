@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import MainHeader from '@/components/MainHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
