@@ -264,12 +264,12 @@ const MainHeader: React.FC = () => {
           
           <div className="flex items-center space-x-4">
             
-            {/* Seletor de Veículo (Desktop/Tablet) */}
+            {/* Seletor de Veículo (Desktop/Tablet) - Oculto em mobile */}
             <div className="hidden sm:block">
                 {renderVehicleSelector()}
             </div>
             
-            {/* Botão de Administrador Master (Desktop) */}
+            {/* Botão de Administrador Master (Desktop) - Oculto em mobile */}
             {isAdmin && (
                 <Button
                   variant="ghost"
@@ -282,19 +282,19 @@ const MainHeader: React.FC = () => {
                 </Button>
             )}
             
-            {/* Botão de Registro de KM Rápido (Visível em todas as telas) */}
+            {/* Botão de Registro de KM Rápido (Visível em todas as telas, mas menor em mobile) */}
             <Button
               variant="outline"
               size="sm"
               className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-700"
               onClick={() => setIsMileageDialogOpen(true)}
             >
-              <Gauge className="w-4 h-4 mr-2" />
+              <Gauge className="w-4 h-4 mr-2 sm:mr-2" />
               <span className="hidden sm:inline">Registrar KM</span>
               <span className="sm:hidden">KM</span>
             </Button>
             
-            {/* Botão de Alertas */}
+            {/* Botão de Alertas (Visível em todas as telas) */}
             <Button
               variant="ghost"
               size="sm"
