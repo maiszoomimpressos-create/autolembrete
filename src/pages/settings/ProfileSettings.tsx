@@ -12,6 +12,7 @@ import { ProfileData } from '@/types/profile';
 interface ProfileFormState {
     firstName: string;
     lastName: string;
+    phoneNumber: string; // Novo campo
 }
 
 const ProfileSettings: React.FC = () => {
@@ -20,6 +21,7 @@ const ProfileSettings: React.FC = () => {
   const [formData, setFormData] = useState<ProfileFormState>({
     firstName: profile.firstName || '',
     lastName: profile.lastName || '',
+    phoneNumber: profile.phoneNumber || '', // Inicializando o novo campo
   });
 
   useEffect(() => {
@@ -27,17 +29,14 @@ const ProfileSettings: React.FC = () => {
     setFormData({
       firstName: profile.firstName || '',
       lastName: profile.lastName || '',
+      phoneNumber: profile.phoneNumber || '', // Atualizando o novo campo
     });
   }, [profile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     
-    if (id === 'firstName') {
-      setFormData(prev => ({ ...prev, firstName: value }));
-    } else if (id === 'lastName') {
-      setFormData(prev => ({ ...prev, lastName: value }));
-    }
+    setFormData(prev => ({ ...prev, [id]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,6 +50,7 @@ const ProfileSettings: React.FC = () => {
     const dataToUpdate: Omit<ProfileData, 'id' | 'avatarUrl'> = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim() || null,
+        phoneNumber: formData.phoneNumber.trim() || null, // Salvando o telefone
     };
 
     updateProfile(dataToUpdate);
@@ -98,6 +98,19 @@ const ProfileSettings: React.FC = () => {
                     className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
                   />
                 </div>
+            </div>
+            
+            {/* Novo campo de Telefone */}
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Número de Telefone (Opcional)</Label>
+              <Input 
+                id="phoneNumber" 
+                type="tel" 
+                value={formData.phoneNumber} 
+                onChange={handleChange} 
+                placeholder="(XX) XXXXX-XXXX"
+                className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
+              />
             </div>
             
             <div className="space-y-2">

@@ -13,12 +13,14 @@ const fromDb = (record: any): ProfileData => ({
   firstName: record.first_name,
   lastName: record.last_name,
   avatarUrl: record.avatar_url,
+  phoneNumber: record.phone_number, // Incluindo o novo campo
 });
 
 const toDbUpdate = (record: Omit<ProfileData, 'id'>): ProfileUpdate => ({
   first_name: record.firstName,
   last_name: record.lastName,
   avatar_url: record.avatarUrl,
+  phone_number: record.phoneNumber, // Incluindo o novo campo
 });
 
 // --- Funções de Busca ---
@@ -26,7 +28,7 @@ const toDbUpdate = (record: Omit<ProfileData, 'id'>): ProfileUpdate => ({
 const fetchProfile = async (userId: string): Promise<ProfileData | null> => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, avatar_url')
+    .select('id, first_name, last_name, avatar_url, phone_number') // Selecionando o novo campo
     .eq('id', userId)
     .single();
 
