@@ -16,6 +16,7 @@ import MainHeader from "./components/MainHeader";
 import ThemeProvider from "./components/ThemeProvider";
 import SessionContextProvider from "./components/SessionContextProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
+import FloatingActionButton from "./components/FloatingActionButton"; // Novo Import
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,8 @@ const ProtectedLayout = () => (
         <main className="flex-grow overflow-y-auto">
             <Outlet />
         </main>
+        {/* Botão de Ação Flutuante */}
+        <FloatingActionButton />
     </div>
 );
 

@@ -28,7 +28,6 @@ import { useMileageRecords } from '@/hooks/useMileageRecords';
 import { useMileageAlerts } from '@/hooks/useMileageAlerts';
 import { useDateAlerts } from '@/hooks/useDateAlerts';
 import { Badge } from '@/components/ui/badge';
-import MileageInputDialog from './MileageInputDialog';
 import { useVehicle } from '@/hooks/useVehicle';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
 import {
@@ -61,8 +60,6 @@ const MainHeader: React.FC = () => {
   const location = useLocation();
   const { user, signOut, isAdmin } = useSession();
   const { profile } = useProfile();
-  const [isMileageDialogOpen, setIsMileageDialogOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Hooks de Veículo
   const { vehicle: activeVehicle, vehicles, isLoading: isLoadingVehicle } = useVehicle();
@@ -77,7 +74,6 @@ const MainHeader: React.FC = () => {
   const totalAlerts = mileageAlerts.length + dateAlerts.length;
 
   const handleMenuItemClick = (path: string) => {
-    setIsMobileMenuOpen(false);
     if (path === '/logout') {
         signOut();
         navigate('/');
@@ -187,7 +183,6 @@ const MainHeader: React.FC = () => {
                 <DropdownMenuItem 
                     onClick={() => {
                         navigate('/settings/vehicle');
-                        if (isMobile) setIsMobileMenuOpen(false);
                     }}
                     className="text-blue-600 dark:text-blue-400 cursor-pointer dark:hover:bg-gray-700"
                 >
@@ -287,18 +282,6 @@ const MainHeader: React.FC = () => {
                 {renderVehicleSelector(false)}
             </div>
             
-            {/* Botão de Registro de KM Rápido */}
-            <Button
-              // Estilo aprimorado: Fundo azul forte em desktop, ícone em mobile
-              variant="default"
-              size="sm"
-              className="cursor-pointer whitespace-nowrap !rounded-button h-9 w-9 sm:h-10 sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
-              onClick={() => setIsMileageDialogOpen(true)}
-            >
-              <Gauge className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Registrar KM</span>
-            </Button>
-            
             {/* Botão de Alertas */}
             <Button
               variant="ghost"
@@ -323,7 +306,7 @@ const MainHeader: React.FC = () => {
             </div>
             
             {/* Menu Hamburger (Mobile - Visível em telas menores que MD) */}
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <Sheet>
                 <SheetTrigger asChild className="md:hidden">
                     <Button variant="ghost" size="icon" className="h-9 w-9">
                         <Menu className="w-6 h-6 dark:text-white" />
@@ -340,7 +323,7 @@ const MainHeader: React.FC = () => {
                         
                         {/* Links de Navegação (Mobile) */}
                         <div className="flex-grow overflow-y-auto">
-                            {renderNavLinks(() => setIsMobileMenuOpen(false), true)}
+                            {renderNavLinks(() => {}, true)}
                             
                             {/* Seletor de Veículo (Mobile) */}
                             <div className="p-4 border-t dark:border-gray-800">
@@ -356,7 +339,6 @@ const MainHeader: React.FC = () => {
                                       className="w-full justify-start text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:text-red-400"
                                       onClick={() => {
                                           navigate('/master-admin');
-                                          setIsMobileMenuOpen(false);
                                       }}
                                     >
                                       <Shield className="w-4 h-4 mr-2" />
@@ -372,7 +354,6 @@ const MainHeader: React.FC = () => {
                                   className="w-full justify-start text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                                   onClick={() => {
                                       navigate('/settings');
-                                      setIsMobileMenuOpen(false);
                                   }}
                                 >
                                   <Settings className="w-4 h-4 mr-2" />
@@ -409,12 +390,6 @@ const MainHeader: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      {/* Diálogo de Registro de KM */}
-      <MileageInputDialog 
-        isOpen={isMileageDialogOpen} 
-        onOpenChange={setIsMileageDialogOpen} 
-      />
     </header>
   );
 };
