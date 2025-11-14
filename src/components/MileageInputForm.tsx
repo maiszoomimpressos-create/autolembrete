@@ -3,15 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from '@/components/ui/card';
-import { Gauge } from 'lucide-react';
+import { Gauge, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { useMileageRecords } from '@/hooks/useMileageRecords'; // Importando o hook para acessar isMutating
+import { useFuelingRecords } from '@/hooks/useFuelingRecords'; // Necessário para o useMileageRecords
 
 interface MileageInputFormProps {
   currentMileage: number;
-  onSubmit: (date: string, mileage: number) => void;
+  onSubmit: (date: string, mileage: number) => Promise<void>; // Atualizado para ser assíncrono
 }
 
 const MileageInputForm: React.FC<MileageInputFormProps> = ({ currentMileage, onSubmit }) => {
+  const { records: fuelingRecords } = useFuelingRecords();
+  const { isMutating } = useMileageRecords(fuelingRecords); // Acessando o estado de mutação
+  
   const [mileage, setMileage] = useState<number>(currentMileage);
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
@@ -19,7 +24,7 @@ const MileageInputForm: React.FC<MileageInputFormProps> = ({ currentMileage, onS
     setMileage(currentMileage);
   }, [currentMileage]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (mileage <= currentMileage) {
@@ -32,7 +37,7 @@ const MileageInputForm: React.FC<MileageInputFormProps> = ({ currentMileage, onS
         return;
     }
 
-    onSubmit(date, mileage);
+    await onSubmit(date, mileage);
     showSuccess(`Quilometragem atualizada para ${mileage.toLocaleString('pt-BR')} km.`);
   };
 
@@ -71,8 +76,16 @@ const MileageInputForm: React.FC<MileageInputFormProps> = ({ currentMileage, onS
             />
           </div>
           
-          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
-            Atualizar KM
+          <Button 
+            type="submit" 
+            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+            disabled={isMutating}
+          >
+            {isMutating ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+                'Atualizar KM'
+            )}
           </Button>
         </form>
       </CardContent>

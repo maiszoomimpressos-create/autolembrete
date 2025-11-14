@@ -1,24 +1,16 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { FuelingRecord } from '@/types/fueling';
 import { MileageRecord } from '@/types/mileage';
-
-// Simulação de registros manuais iniciais
-const initialManualRecords: MileageRecord[] = [
-  { id: 'm1', date: '2024-07-25', mileage: 45600, source: 'Manual' },
-];
+import { useManualMileageRecordsQuery, useMileageMutations } from '@/integrations/supabase/mileage';
 
 export const useMileageRecords = (fuelingRecords: FuelingRecord[]) => {
-  const [manualRecords, setManualRecords] = useState<MileageRecord[]>(initialManualRecords);
+  // Busca registros manuais do Supabase
+  const { data: manualRecords = [], isLoading: isLoadingManual } = useManualMileageRecordsQuery();
+  const { addManualRecord: addManualRecordMutation, isMutating } = useMileageMutations();
 
-  const addManualRecord = useCallback((date: string, mileage: number) => {
-    const newRecord: MileageRecord = {
-      id: Date.now().toString(),
-      date,
-      mileage,
-      source: 'Manual',
-    };
-    setManualRecords(prev => [newRecord, ...prev]);
-  }, []);
+  const addManualRecord = useCallback(async (date: string, mileage: number) => {
+    await addManualRecordMutation({ date, mileage });
+  }, [addManualRecordMutation]);
 
   const allMileageRecords = useMemo(() => {
     // Converter FuelingRecords para MileageRecords
@@ -52,5 +44,7 @@ export const useMileageRecords = (fuelingRecords: FuelingRecord[]) => {
     allMileageRecords,
     currentMileage,
     addManualRecord,
+    isLoading: isLoadingManual,
+    isMutating,
   };
 };

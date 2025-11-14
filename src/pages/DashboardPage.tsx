@@ -4,7 +4,7 @@ import VehicleSummary from '@/components/VehicleSummary';
 import MonthlySpendingChart from '@/components/MonthlySpendingChart';
 import FuelEfficiencyChart from '@/components/FuelEfficiencyChart';
 import MileageInputForm from '@/components/MileageInputForm';
-import { DollarSign, Clock, TrendingUp, AlertTriangle, Gauge, Calendar, ChevronRight } from 'lucide-react';
+import { DollarSign, Clock, TrendingUp, AlertTriangle, Gauge, Calendar, ChevronRight, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFuelingMetrics } from '@/hooks/useFuelingMetrics';
 import { useFuelingRecords } from '@/hooks/useFuelingRecords';
@@ -15,7 +15,7 @@ import { useMileageRecords } from '@/hooks/useMileageRecords';
 import { useLastMaintenanceDate } from '@/hooks/useLastMaintenanceDate';
 import { useDateAlerts } from '@/hooks/useDateAlerts';
 import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard';
-import AlertItem from '@/components/AlertItem'; // Novo Import
+import AlertItem from '@/components/AlertItem';
 import { MaintenanceAlert } from '@/types/alert';
 import { useNavigate } from 'react-router-dom';
 import { MaintenanceRecord } from '@/types/maintenance';
@@ -24,14 +24,14 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   
   // Dados de Abastecimento
-  const { records: fuelingRecords } = useFuelingRecords();
+  const { records: fuelingRecords, isLoading: isLoadingFueling } = useFuelingRecords();
   const { averageEfficiency } = useFuelingMetrics(fuelingRecords);
 
   // Dados de KM (Combina abastecimentos e entradas manuais)
-  const { currentMileage, addManualRecord } = useMileageRecords(fuelingRecords);
+  const { currentMileage, addManualRecord, isLoading: isLoadingMileage } = useMileageRecords(fuelingRecords);
 
   // Dados de Manutenção
-  const { records: maintenanceRecords, addOrUpdateRecord } = useMaintenanceRecords();
+  const { records: maintenanceRecords, isLoading: isLoadingMaintenance } = useMaintenanceRecords();
   const { totalCost, pendingCount, nextMaintenance } = useMaintenanceMetrics(maintenanceRecords);
   const lastServiceDate = useLastMaintenanceDate(maintenanceRecords);
   
@@ -88,6 +88,16 @@ const DashboardPage: React.FC = () => {
     navigate('/maintenance', { state: { createFromAlert: alert } });
   };
 
+  const isLoadingData = isLoadingFueling || isLoadingMaintenance || isLoadingMileage;
+
+  if (isLoadingData) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 dark:text-blue-400" />
+        <p className="mt-4 dark:text-white">Carregando dados do veículo...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
