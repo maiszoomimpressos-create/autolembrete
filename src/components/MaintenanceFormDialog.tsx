@@ -169,7 +169,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
             </span>
             {hasMultipleVehicles && (
                 <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
-                    (Mude em Configurações > Veículo)
+                    (Mude em Configurações &gt; Veículo)
                 </span>
             )}
         </div>
