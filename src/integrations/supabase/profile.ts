@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { ProfileData } from '@/types/profile';
+import { ProfileData, ProfileUpdate } from '@/types/profile';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/components/SessionContextProvider';
 import { showError, showSuccess } from '@/utils/toast';
@@ -13,7 +13,14 @@ const fromDb = (record: any): ProfileData => ({
   firstName: record.first_name,
   lastName: record.last_name,
   avatarUrl: record.avatar_url,
-  phoneNumber: record.phone_number,
+  phoneNumber: record.phone_number, // Incluindo o novo campo
+});
+
+const toDbUpdate = (record: Omit<ProfileData, 'id'>): ProfileUpdate => ({
+  first_name: record.firstName,
+  last_name: record.lastName,
+  avatar_url: record.avatarUrl,
+  phone_number: record.phoneNumber, // Incluindo o novo campo
 });
 
 // --- Funções de Busca ---
@@ -21,7 +28,7 @@ const fromDb = (record: any): ProfileData => ({
 const fetchProfile = async (userId: string): Promise<ProfileData | null> => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, avatar_url, phone_number')
+    .select('id, first_name, last_name, avatar_url, phone_number') // Selecionando o novo campo
     .eq('id', userId)
     .single();
 
@@ -62,19 +69,12 @@ export const useProfileMutations = () => {
     mutationFn: async (profileData) => {
       if (!userId) throw new Error('User not authenticated.');
       
-      // Usamos upsert para garantir que o registro seja criado se não existir (caso o trigger falhe)
-      // ou atualizado se já existir, garantindo que .single() retorne exatamente uma linha.
-      const dbRecord = {
-          id: userId,
-          first_name: profileData.firstName,
-          last_name: profileData.lastName,
-          avatar_url: profileData.avatarUrl,
-          phone_number: profileData.phoneNumber,
-      };
+      const dbUpdate = toDbUpdate(profileData);
       
       const { data, error } = await supabase
         .from('profiles')
-        .upsert(dbRecord, { onConflict: 'id' })
+        .update(dbUpdate)
+        .eq('id', userId)
         .select()
         .single();
 
