@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FuelingRecord } from '@/types/fueling';
 import { Fuel, Car } from 'lucide-react';
+import TripFuelingForm from './TripFuelingForm';
 
 interface FuelingFormDialogProps {
   isOpen: boolean;
