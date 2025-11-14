@@ -6,16 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MaintenanceRecord } from '@/types/maintenance';
-import { Wrench, AlertTriangle, Clock, Gauge } from 'lucide-react';
+import { Wrench, AlertTriangle, Clock, Gauge, Loader2 } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MaintenanceAlert } from '@/types/alert'; // Novo Import
+import { MaintenanceAlert } from '@/types/alert';
+import { useServiceTypes } from '@/hooks/useServiceTypes'; // Novo Import
 
 interface MaintenanceFormDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   recordToEdit: MaintenanceRecord | null;
-  alertToCreateFrom: MaintenanceAlert | null; // Novo prop
+  alertToCreateFrom: MaintenanceAlert | null;
   onSubmit: (data: Omit<MaintenanceRecord, 'id'>) => void;
   currentMileage: number;
 }
@@ -33,6 +34,8 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   onSubmit,
   currentMileage,
 }) => {
+  const { allServiceTypes, isLoading: isLoadingServiceTypes } = useServiceTypes(); // Usando o novo hook
+  
   const isEditing = !!recordToEdit;
   const isCreatingFromAlert = !!alertToCreateFrom;
   const title = isEditing ? 'Editar Manutenção' : (isCreatingFromAlert ? 'Registrar Manutenção Recorrente' : 'Adicionar Nova Manutenção');
@@ -68,22 +71,16 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
       });
     } else if (alertToCreateFrom) {
         // Modo Criação a partir de Alerta (Pré-preenchimento)
-        // O ID do alerta contém o ID do registro original (ex: '1-mileage')
-        const originalRecordId = alertToCreateFrom.id.split('-')[0];
-        
-        // Como não temos acesso direto ao registro original aqui, vamos simular o pré-preenchimento
-        // com base no tipo e nos intervalos do alerta, assumindo que o tipo é o mesmo.
-        
-        // Nota: Em um sistema real, buscaríamos o registro original pelo ID.
-        // Aqui, vamos usar valores padrão e o tipo do alerta.
-        
         const typeFromAlert = alertToCreateFrom.type as MaintenanceRecord['type'];
+        
+        // Verifica se o tipo do alerta é um dos tipos padrão ou um tipo personalizado
+        const isCustomType = !['Troca de Óleo', 'Revisão Geral', 'Pneus', 'Freios', 'Outro'].includes(typeFromAlert);
         
         setFormData({
             date: new Date().toISOString().split('T')[0],
             mileage: currentMileage, // Sugere o KM atual
-            type: typeFromAlert,
-            customType: typeFromAlert === 'Outro' ? alertToCreateFrom.type : '',
+            type: isCustomType ? 'Outro' : typeFromAlert, // Se for personalizado, define como 'Outro'
+            customType: isCustomType ? alertToCreateFrom.type : '', // E usa o nome real no customType
             description: `Serviço de ${alertToCreateFrom.type} realizado.`,
             cost: 0, // Custo deve ser preenchido
             status: 'Concluído', // Assume que o usuário está registrando a conclusão
@@ -116,7 +113,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   const handleSelectChange = (id: keyof FormDataState, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [id]: value,
+      [id]: value as MaintenanceRecord['type'],
       // Limpa customType se o tipo não for 'Outro'
       customType: value !== 'Outro' ? '' : prev.customType,
     }));
@@ -160,6 +157,19 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   const isCompleted = formData.status === 'Concluído';
   const isMileageHigherThanCurrent = isCompleted && formData.mileage > currentMileage;
   const mileageDifference = formData.mileage - currentMileage;
+  
+  if (isLoadingServiceTypes) {
+      return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[600px] dark:bg-gray-900 dark:text-white">
+                <div className="flex items-center justify-center h-32">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
+                    <p className="ml-2 dark:text-white">Carregando tipos de serviço...</p>
+                </div>
+            </DialogContent>
+        </Dialog>
+      );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -212,14 +222,14 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
               <Label htmlFor="type" className="dark:text-gray-300">Tipo de Serviço</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value) => handleSelectChange('type', value as MaintenanceRecord['type'])}
+                onValueChange={(value) => handleSelectChange('type', value)}
                 disabled={isCreatingFromAlert} // Não permite mudar o tipo ao criar a partir de um alerta
               >
                 <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                  {['Troca de Óleo', 'Revisão Geral', 'Pneus', 'Freios', 'Outro'].map(type => (
+                  {allServiceTypes.map(type => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>
@@ -245,7 +255,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
               <Label htmlFor="status" className="dark:text-gray-300">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => handleSelectChange('status', value as MaintenanceRecord['status'])}
+                onValueChange={(value) => handleSelectChange('status', value)}
                 disabled={isCreatingFromAlert} // Ao criar a partir de alerta, o status é sempre Concluído
               >
                 <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
