@@ -17,7 +17,7 @@ import {
   Gauge,
   Check,
   ChevronDown,
-  Menu, // Adicionado para o menu mobile
+  Menu,
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
 import { useProfile } from '@/hooks/useProfile';
@@ -38,7 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // Componentes para menu mobile
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface NavItem {
   path: string;
@@ -51,6 +51,7 @@ const navItems: NavItem[] = [
   { path: '/maintenance', label: 'Manutenções', icon: Wrench },
   { path: '/fueling', label: 'Abastecimentos', icon: Fuel },
   { path: '/history', label: 'Histórico', icon: History },
+  { path: '/alerts', label: 'Alertas', icon: Bell }, // Adicionado Alertas aqui para o menu
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
 
@@ -61,7 +62,7 @@ const MainHeader: React.FC = () => {
   const { profile } = useProfile();
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const [isMileageDialogOpen, setIsMileageDialogOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Estado para o menu mobile
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   
   // Hooks de Veículo
@@ -115,16 +116,51 @@ const MainHeader: React.FC = () => {
     ? profile.firstName.substring(0, 1).toUpperCase() + (profile.lastName ? profile.lastName.substring(0, 1).toUpperCase() : '')
     : user?.email ? user.email.substring(0, 2).toUpperCase() : 'JD';
 
-  const renderNavLinks = (onLinkClick: () => void, isMobile: boolean) => (
-    <div className={isMobile ? "flex flex-col space-y-1 p-4" : "space-x-8"}>
+  // Renderiza links de navegação como DropdownMenuItems
+  const renderNavLinksAsDropdown = (onLinkClick: () => void) => (
+    <>
         {navItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
             const Icon = item.icon;
+            
+            // Tratamento especial para o link de Alertas, que já tem um botão dedicado
+            const isAlertsLink = item.path === '/alerts';
+            
+            return (
+                <DropdownMenuItem
+                    key={item.path}
+                    onClick={() => {
+                        navigate(item.path);
+                        onLinkClick();
+                    }}
+                    className={`cursor-pointer flex items-center space-x-3 ${isActive ? 'bg-gray-100 dark:bg-gray-700/50' : 'dark:hover:bg-gray-700'}`}
+                >
+                    <Icon className={`w-4 h-4 ${isAlertsLink && totalAlerts > 0 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`} />
+                    <span>{item.label}</span>
+                    {isAlertsLink && totalAlerts > 0 && (
+                        <Badge variant="destructive" className="ml-auto h-4 px-2 text-xs">
+                            {totalAlerts}
+                        </Badge>
+                    )}
+                </DropdownMenuItem>
+            );
+        })}
+    </>
+  );
+  
+  // Renderiza links de navegação como botões para o menu mobile
+  const renderNavLinksAsButtons = (onLinkClick: () => void) => (
+    <div className="flex flex-col space-y-1 p-4">
+        {navItems.map((item) => {
+            const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
+            const Icon = item.icon;
+            const isAlertsLink = item.path === '/alerts';
+            
             return (
                 <Button
                     key={item.path}
                     variant={isActive ? 'default' : 'ghost'}
-                    className={`cursor-pointer whitespace-nowrap !rounded-button ${isMobile ? 'w-full justify-start' : ''} ${isActive ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+                    className={`w-full justify-start !rounded-button ${isActive ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
                     onClick={() => {
                         navigate(item.path);
                         onLinkClick();
@@ -132,6 +168,11 @@ const MainHeader: React.FC = () => {
                 >
                     <Icon className="w-4 h-4 mr-2" />
                     {item.label}
+                    {isAlertsLink && totalAlerts > 0 && (
+                        <Badge variant="destructive" className="ml-auto h-4 px-2 text-xs">
+                            {totalAlerts}
+                        </Badge>
+                    )}
                 </Button>
             );
         })}
@@ -145,48 +186,49 @@ const MainHeader: React.FC = () => {
         <AvatarFallback>{userInitials}</AvatarFallback>
       </Avatar>
       {isAvatarMenuOpen && (
-        <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-gray-800 dark:border-gray-700">
+        <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-gray-800 dark:border-gray-700">
           <div className="py-2">
             <div className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white truncate border-b dark:border-gray-700">
                 {getDisplayName()}
             </div>
             
+            {/* Links de Navegação */}
+            <div className="py-1">
+                {renderNavLinksAsDropdown(() => setIsAvatarMenuOpen(false))}
+            </div>
+            
+            <Separator className="my-1 dark:bg-gray-700" />
+            
             {/* Botão de Administrador Master (Visível apenas para admins) */}
             {isAdmin && (
                 <>
-                    <button
+                    <DropdownMenuItem
                       onClick={() => handleMenuItemClick('/master-admin')}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20"
+                      className="cursor-pointer flex items-center space-x-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                     >
                       <Shield className="w-4 h-4 text-red-500" />
                       <span>Admin Master</span>
-                    </button>
+                    </DropdownMenuItem>
                     <Separator className="my-1 dark:bg-gray-700" />
                 </>
             )}
             
-            <button
+            {/* Configurações de Perfil e Sair */}
+            <DropdownMenuItem
               onClick={() => handleMenuItemClick('/settings/profile')}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
+              className="cursor-pointer flex items-center space-x-3 dark:hover:bg-gray-700"
             >
               <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               <span>Ver Perfil</span>
-            </button>
-            <button
-              onClick={() => handleMenuItemClick('/settings')}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span>Configurações</span>
-            </button>
-            <Separator className="my-1 dark:bg-gray-700" />
-            <button
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem
               onClick={() => handleMenuItemClick('/logout')}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20"
+              className="cursor-pointer flex items-center space-x-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
             >
               <LogOut className="w-4 h-4 text-red-500" />
               <span>Sair</span>
-            </button>
+            </DropdownMenuItem>
           </div>
         </div>
       )}
@@ -257,10 +299,8 @@ const MainHeader: React.FC = () => {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Autolembrete</h1>
           </div>
           
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex">
-            {renderNavLinks(() => {}, false)}
-          </nav>
+          {/* Desktop Navigation - Removida para limpar a barra */}
+          <nav className="hidden md:flex"></nav>
           
           <div className="flex items-center space-x-4">
             
@@ -268,19 +308,6 @@ const MainHeader: React.FC = () => {
             <div className="hidden sm:block">
                 {renderVehicleSelector()}
             </div>
-            
-            {/* Botão de Administrador Master (Desktop) */}
-            {isAdmin && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="cursor-pointer whitespace-nowrap !rounded-button text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 hidden lg:flex"
-                  onClick={() => navigate('/master-admin')}
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Admin Master
-                </Button>
-            )}
             
             {/* Botão de Registro de KM Rápido (Visível em todas as telas) */}
             <Button
@@ -294,7 +321,7 @@ const MainHeader: React.FC = () => {
               <span className="sm:hidden">KM</span>
             </Button>
             
-            {/* Botão de Alertas */}
+            {/* Botão de Alertas (Mantido, mas o link também está no menu do avatar) */}
             <Button
               variant="ghost"
               size="sm"
@@ -333,9 +360,9 @@ const MainHeader: React.FC = () => {
                             </div>
                         </div>
                         
-                        {/* Links de Navegação */}
+                        {/* Links de Navegação (Mobile) */}
                         <div className="flex-grow overflow-y-auto">
-                            {renderNavLinks(() => setIsMobileMenuOpen(false), true)}
+                            {renderNavLinksAsButtons(() => setIsMobileMenuOpen(false))}
                             
                             {/* Seletor de Veículo (Mobile) */}
                             <div className="p-4 border-t dark:border-gray-800">
