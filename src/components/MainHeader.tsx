@@ -14,15 +14,17 @@ import {
   LogOut,
   Fuel,
   Shield,
+  Gauge, // Novo Import
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
 import { useProfile } from '@/hooks/useProfile';
-import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords'; // Novo Import
-import { useFuelingRecords } from '@/hooks/useFuelingRecords'; // Novo Import
-import { useMileageRecords } from '@/hooks/useMileageRecords'; // Novo Import
-import { useMileageAlerts } from '@/hooks/useMileageAlerts'; // Novo Import
-import { useDateAlerts } from '@/hooks/useDateAlerts'; // Novo Import
-import { Badge } from '@/components/ui/badge'; // Novo Import
+import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
+import { useFuelingRecords } from '@/hooks/useFuelingRecords';
+import { useMileageRecords } from '@/hooks/useMileageRecords';
+import { useMileageAlerts } from '@/hooks/useMileageAlerts';
+import { useDateAlerts } from '@/hooks/useDateAlerts';
+import { Badge } from '@/components/ui/badge';
+import MileageInputDialog from './MileageInputDialog'; // Novo Import
 
 interface NavItem {
   path: string;
@@ -44,6 +46,7 @@ const MainHeader: React.FC = () => {
   const { user, signOut, isAdmin } = useSession();
   const { profile } = useProfile();
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+  const [isMileageDialogOpen, setIsMileageDialogOpen] = useState(false); // Novo estado para o diálogo de KM
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   
   // Hooks de Alerta
@@ -186,6 +189,18 @@ const MainHeader: React.FC = () => {
                   Admin Master
                 </Button>
             )}
+            
+            {/* Botão de Registro de KM Rápido */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-700 hidden sm:flex"
+              onClick={() => setIsMileageDialogOpen(true)}
+            >
+              <Gauge className="w-4 h-4 mr-2" />
+              Registrar KM
+            </Button>
+            
             {/* Botão de Alertas */}
             <Button
               variant="ghost"
@@ -207,6 +222,12 @@ const MainHeader: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Diálogo de Registro de KM */}
+      <MileageInputDialog 
+        isOpen={isMileageDialogOpen} 
+        onOpenChange={setIsMileageDialogOpen} 
+      />
     </header>
   );
 };
