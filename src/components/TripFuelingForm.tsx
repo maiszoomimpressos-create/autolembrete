@@ -5,13 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FuelingRecord } from '@/types/fueling';
-import { Plus, Trash2, Car, Gauge, Fuel } from 'lucide-react';
+import { Plus, Trash2, Gauge } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
 // Tipo auxiliar para o estado do formulário de viagem
 interface TripRecord {
   date: string;
-  mileage: number;
+  mileage: number; // KM final do abastecimento
   fuelType: FuelingRecord['fuelType'];
   volumeLiters: number;
   costPerLiter: number;
@@ -25,6 +25,7 @@ interface TripFuelingFormProps {
 }
 
 const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel }) => {
+  const [initialMileage, setInitialMileage] = useState<number>(0); // KM Inicial da Viagem
   const [tripRecords, setTripRecords] = useState<TripRecord[]>([
     // Começa com um registro vazio
     {
@@ -38,12 +39,40 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
     },
   ]);
 
+  // Helper function to calculate efficiency
+  const calculateEfficiency = (index: number, records: TripRecord[], startKm: number): number | null => {
+    if (index < 0 || index >= records.length) return null;
+
+    const currentRecord = records[index];
+    const volume = currentRecord.volumeLiters;
+
+    if (volume <= 0) return null;
+
+    let startMileage: number;
+    if (index === 0) {
+      startMileage = startKm;
+    } else {
+      startMileage = records[index - 1].mileage;
+    }
+
+    const endMileage = currentRecord.mileage;
+    const distance = endMileage - startMileage;
+
+    if (distance > 0) {
+      return parseFloat((distance / volume).toFixed(2));
+    }
+    return null;
+  };
+
   const handleAddRecord = () => {
+    // Sugere o KM final do último abastecimento como KM inicial para o novo registro
+    const lastMileage = tripRecords[tripRecords.length - 1]?.mileage || initialMileage;
+    
     setTripRecords(prev => [
       ...prev,
       {
         date: new Date().toISOString().split('T')[0],
-        mileage: 0,
+        mileage: lastMileage, // Sugere o último KM conhecido
         fuelType: 'Gasolina Comum',
         volumeLiters: 0,
         costPerLiter: 0,
@@ -95,13 +124,32 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
     });
   };
 
+  const handleInitialMileageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInitialMileage(parseInt(e.target.value) || 0);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validação básica
-    const isValid = tripRecords.every(r => r.mileage > 0 && r.volumeLiters > 0 && r.totalCost > 0);
+    // Validação de KM Inicial
+    if (initialMileage <= 0) {
+        showError("Por favor, insira a Quilometragem Inicial da Viagem.");
+        return;
+    }
+    
+    let previousMileage = initialMileage;
+    let isValid = true;
+
+    tripRecords.forEach((r, index) => {
+        // Validação de KM crescente e campos obrigatórios
+        if (r.mileage <= previousMileage || r.volumeLiters <= 0 || r.totalCost <= 0) {
+            isValid = false;
+        }
+        previousMileage = r.mileage;
+    });
+
     if (!isValid) {
-      showError("Por favor, preencha todos os campos obrigatórios (KM, Litros, Custo Total) para todos os abastecimentos.");
+      showError("Verifique se todos os abastecimentos têm KM final maior que o anterior, Litros e Custo Total preenchidos.");
       return;
     }
 
@@ -120,114 +168,158 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
         Adicione todos os abastecimentos realizados durante a sua viagem. Eles serão registrados individualmente.
       </p>
 
+      {/* KM Inicial da Viagem */}
+      <Card className="dark:bg-gray-800 dark:border-gray-700 p-4">
+        <CardTitle className="text-base mb-2 dark:text-white flex items-center space-x-2">
+            <Gauge className="w-4 h-4 text-blue-500" />
+            <span>KM Inicial da Viagem</span>
+        </CardTitle>
+        <div className="space-y-2">
+            <Label htmlFor="initialMileage">Quilometragem no início da viagem</Label>
+            <Input
+                id="initialMileage"
+                type="number"
+                value={initialMileage}
+                onChange={handleInitialMileageChange}
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+            />
+        </div>
+      </Card>
+
       <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-        {tripRecords.map((record, index) => (
-          <Card key={index} className="dark:bg-gray-800 dark:border-gray-700 relative p-4">
-            <CardHeader className="p-0 mb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-base dark:text-white">
-                Abastecimento #{index + 1}
-              </CardTitle>
-              {tripRecords.length > 1 && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  type="button"
-                  onClick={() => handleRemoveRecord(index)}
-                  className="text-red-500 hover:bg-red-500/10"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent className="p-0 grid grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor={`date-${index}`}>Data</Label>
-                <Input
-                  id={`date-${index}`}
-                  type="date"
-                  value={record.date}
-                  onChange={(e) => handleChange(index, 'date', e.target.value)}
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`mileage-${index}`}>KM</Label>
-                <Input
-                  id={`mileage-${index}`}
-                  type="number"
-                  value={record.mileage}
-                  onChange={(e) => handleChange(index, 'mileage', e.target.value)}
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`station-${index}`}>Posto</Label>
-                <Input
-                  id={`station-${index}`}
-                  type="text"
-                  value={record.station}
-                  onChange={(e) => handleChange(index, 'station', e.target.value)}
-                  placeholder="Nome do posto"
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor={`fuelType-${index}`}>Combustível</Label>
-                <Select
-                  value={record.fuelType}
-                  onValueChange={(value) => handleChange(index, 'fuelType', value as FuelingRecord['fuelType'])}
-                >
-                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                    {['Gasolina Comum', 'Gasolina Aditivada', 'Etanol', 'Diesel'].map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`volumeLiters-${index}`}>Litros</Label>
-                <Input
-                  id={`volumeLiters-${index}`}
-                  type="number"
-                  step="0.01"
-                  value={record.volumeLiters}
-                  onChange={(e) => handleChange(index, 'volumeLiters', e.target.value)}
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`costPerLiter-${index}`}>Custo/L (R$)</Label>
-                <Input
-                  id={`costPerLiter-${index}`}
-                  type="number"
-                  step="0.01"
-                  value={record.costPerLiter}
-                  onChange={(e) => handleChange(index, 'costPerLiter', e.target.value)}
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                />
-              </div>
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor={`totalCost-${index}`}>Custo Total (R$)</Label>
-                <Input
-                  id={`totalCost-${index}`}
-                  type="number"
-                  step="0.01"
-                  value={record.totalCost}
-                  onChange={(e) => handleChange(index, 'totalCost', e.target.value)}
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {tripRecords.map((record, index) => {
+          const efficiency = calculateEfficiency(index, tripRecords, initialMileage);
+          const previousMileage = index === 0 ? initialMileage : tripRecords[index - 1].mileage;
+          const distance = record.mileage - previousMileage;
+          
+          return (
+            <Card key={index} className="dark:bg-gray-800 dark:border-gray-700 relative p-4">
+              <CardHeader className="p-0 mb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base dark:text-white">
+                  Abastecimento #{index + 1}
+                </CardTitle>
+                {tripRecords.length > 1 && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    type="button"
+                    onClick={() => handleRemoveRecord(index)}
+                    className="text-red-500 hover:bg-red-500/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="p-0 grid grid-cols-2 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor={`date-${index}`}>Data</Label>
+                  <Input
+                    id={`date-${index}`}
+                    type="date"
+                    value={record.date}
+                    onChange={(e) => handleChange(index, 'date', e.target.value)}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`mileage-${index}`}>KM Final (Odomêtro)</Label>
+                  <Input
+                    id={`mileage-${index}`}
+                    type="number"
+                    value={record.mileage}
+                    onChange={(e) => handleChange(index, 'mileage', e.target.value)}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    required
+                    min={previousMileage + 1}
+                  />
+                  {initialMileage > 0 && record.mileage > 0 && record.mileage <= previousMileage && (
+                    <p className="text-xs text-red-500">O KM deve ser maior que o KM anterior ({previousMileage.toLocaleString('pt-BR')}).</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`station-${index}`}>Posto</Label>
+                  <Input
+                    id={`station-${index}`}
+                    type="text"
+                    value={record.station}
+                    onChange={(e) => handleChange(index, 'station', e.target.value)}
+                    placeholder="Nome do posto"
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor={`fuelType-${index}`}>Combustível</Label>
+                  <Select
+                    value={record.fuelType}
+                    onValueChange={(value) => handleChange(index, 'fuelType', value as FuelingRecord['fuelType'])}
+                  >
+                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                      {['Gasolina Comum', 'Gasolina Aditivada', 'Etanol', 'Diesel'].map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`volumeLiters-${index}`}>Litros</Label>
+                  <Input
+                    id={`volumeLiters-${index}`}
+                    type="number"
+                    step="0.01"
+                    value={record.volumeLiters}
+                    onChange={(e) => handleChange(index, 'volumeLiters', e.target.value)}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`costPerLiter-${index}`}>Custo/L (R$)</Label>
+                  <Input
+                    id={`costPerLiter-${index}`}
+                    type="number"
+                    step="0.01"
+                    value={record.costPerLiter}
+                    onChange={(e) => handleChange(index, 'costPerLiter', e.target.value)}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    required
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor={`totalCost-${index}`}>Custo Total (R$)</Label>
+                  <Input
+                    id={`totalCost-${index}`}
+                    type="number"
+                    step="0.01"
+                    value={record.totalCost}
+                    onChange={(e) => handleChange(index, 'totalCost', e.target.value)}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    required
+                  />
+                </div>
+                
+                {/* Exibição da Eficiência */}
+                <div className="col-span-2 pt-2 border-t border-dashed dark:border-gray-700 mt-2">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        {index === 0 ? 'Distância Percorrida (desde o início):' : 'Distância Percorrida (desde o último abastecimento):'}
+                    </p>
+                    <p className="text-lg font-bold dark:text-white">
+                        {distance > 0 ? `${distance.toLocaleString('pt-BR')} km` : 'Aguardando KM final...'}
+                    </p>
+                    {efficiency !== null && (
+                        <p className="text-md font-semibold text-blue-600 dark:text-blue-400 mt-1">
+                            Consumo Estimado: {efficiency} km/l
+                        </p>
+                    )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Button 
