@@ -6,7 +6,7 @@ interface EfficiencyDataPoint {
   efficiency: number | null;
 }
 
-// Dados simulados iniciais (copiados de useFuelingMetrics para consistência)
+// Dados simulados iniciais (para fins de demonstração no Dashboard)
 const initialFuelingRecords: FuelingRecord[] = [
   { id: 'f1', date: '2024-07-20', mileage: 45500, fuelType: 'Gasolina Comum', volumeLiters: 40.5, costPerLiter: 5.50, totalCost: 222.75, station: 'Posto Ipiranga' },
   { id: 'f2', date: '2024-07-10', mileage: 45000, fuelType: 'Etanol', volumeLiters: 35.0, costPerLiter: 3.80, totalCost: 133.00, station: 'Posto Shell' },

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { FuelingRecord } from '@/types/fueling';
 
-// Dados simulados iniciais (copiados de FuelingPage para uso no hook)
+// Dados simulados iniciais (para fins de demonstração no Dashboard)
 const initialFuelingRecords: FuelingRecord[] = [
   { id: 'f1', date: '2024-07-20', mileage: 45500, fuelType: 'Gasolina Comum', volumeLiters: 40.5, costPerLiter: 5.50, totalCost: 222.75, station: 'Posto Ipiranga' },
   { id: 'f2', date: '2024-07-10', mileage: 45000, fuelType: 'Etanol', volumeLiters: 35.0, costPerLiter: 3.80, totalCost: 133.00, station: 'Posto Shell' },
@@ -18,21 +18,16 @@ const calculateAverageEfficiency = (records: FuelingRecord[]): number | null => 
     return null; // Não é possível calcular sem pelo menos dois registros
   }
 
-  // Para calcular a eficiência, precisamos de:
-  // 1. A distância percorrida entre o abastecimento N e N-1 (mileage[N] - mileage[N-1])
-  // 2. O volume de combustível abastecido no abastecimento N (volumeLiters[N])
-  // A eficiência é calculada como Distância / Volume.
-
-  // Vamos calcular a média das últimas 3 eficiências registradas (requer 4 abastecimentos)
+  // Calcula a eficiência para cada intervalo entre abastecimentos
   const efficiencies: number[] = [];
-  const recordsToAnalyze = sortedRecords.slice(-4); // Analisa os últimos 4 para obter 3 medições
 
-  for (let i = 1; i < recordsToAnalyze.length; i++) {
-    const current = recordsToAnalyze[i];
-    const previous = recordsToAnalyze[i - 1];
+  // Começamos do segundo registro (i=1) para calcular a distância percorrida desde o anterior (i-1)
+  for (let i = 1; i < sortedRecords.length; i++) {
+    const current = sortedRecords[i];
+    const previous = sortedRecords[i - 1];
 
     const distance = current.mileage - previous.mileage;
-    const volume = current.volumeLiters;
+    const volume = current.volumeLiters; // O volume abastecido no ponto atual
 
     if (distance > 0 && volume > 0) {
       efficiencies.push(distance / volume);
@@ -49,7 +44,6 @@ const calculateAverageEfficiency = (records: FuelingRecord[]): number | null => 
 
 export const useFuelingMetrics = () => {
   // Em uma aplicação real, você buscaria esses dados de um estado global ou API.
-  // Aqui, usamos dados simulados.
   const fuelingRecords = initialFuelingRecords; 
 
   const averageEfficiency = useMemo(() => {
