@@ -5,32 +5,25 @@ import { FuelingRecord } from '@/types/fueling';
 import { showSuccess } from '@/utils/toast';
 import FuelingTable from '@/components/FuelingTable';
 import FuelingFormDialog from '@/components/FuelingFormDialog';
-
-// Dados simulados iniciais
-const initialRecords: FuelingRecord[] = [
-  { id: 'f1', date: '2024-07-20', mileage: 45500, fuelType: 'Gasolina Comum', volumeLiters: 40.5, costPerLiter: 5.50, totalCost: 222.75, station: 'Posto Ipiranga' },
-  { id: 'f2', date: '2024-07-10', mileage: 45000, fuelType: 'Etanol', volumeLiters: 35.0, costPerLiter: 3.80, totalCost: 133.00, station: 'Posto Shell' },
-  { id: 'f3', date: '2024-06-25', mileage: 44500, fuelType: 'Gasolina Aditivada', volumeLiters: 42.0, costPerLiter: 6.00, totalCost: 252.00, station: 'Posto BR' },
-];
+import { useFuelingRecords } from '@/hooks/useFuelingRecords';
 
 const FuelingPage: React.FC = () => {
-  const [records, setRecords] = useState<FuelingRecord[]>(initialRecords);
+  const { records, addOrUpdateRecord, deleteRecord } = useFuelingRecords();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<FuelingRecord | null>(null);
 
   const handleAddOrEdit = (data: Omit<FuelingRecord, 'id'>) => {
     if (recordToEdit) {
       // Edição
-      setRecords(prev => prev.map(r => r.id === recordToEdit.id ? { ...data, id: r.id } : r));
+      addOrUpdateRecord(data, recordToEdit.id);
       showSuccess('Abastecimento atualizado com sucesso!');
     } else {
-      // Adição
-      const newRecord: FuelingRecord = {
-        ...data,
-        id: Date.now().toString(), // ID simples para simulação
-      };
-      setRecords(prev => [newRecord, ...prev]);
-      showSuccess('Novo abastecimento adicionado!');
+      // Adição (inclui registros de viagem)
+      addOrUpdateRecord(data);
+      // A mensagem de sucesso para viagem é tratada dentro do TripFuelingForm, mas aqui tratamos o caso único.
+      if (data.mileage > 0) { // Checagem simples para evitar duplicidade de toast se vier do TripForm
+        // showSuccess('Novo abastecimento adicionado!'); // Removido para evitar duplicidade com TripForm
+      }
     }
     setRecordToEdit(null);
   };
@@ -42,7 +35,7 @@ const FuelingPage: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('Tem certeza que deseja deletar este registro de abastecimento?')) {
-      setRecords(prev => prev.filter(r => r.id !== id));
+      deleteRecord(id);
       showSuccess('Registro de abastecimento deletado.');
     }
   };

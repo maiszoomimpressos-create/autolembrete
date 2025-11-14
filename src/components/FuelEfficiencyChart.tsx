@@ -10,9 +10,14 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFuelingChartData } from '@/hooks/useFuelingChartData';
+import { FuelingRecord } from '@/types/fueling';
 
-const FuelEfficiencyChart: React.FC = () => {
-  const data = useFuelingChartData();
+interface FuelEfficiencyChartProps {
+  fuelingRecords: FuelingRecord[];
+}
+
+const FuelEfficiencyChart: React.FC<FuelEfficiencyChartProps> = ({ fuelingRecords }) => {
+  const data = useFuelingChartData(fuelingRecords);
 
   return (
     <Card className="dark:bg-gray-800 dark:border-gray-700">

@@ -2,13 +2,18 @@ import React from 'react';
 import MetricCard from '@/components/MetricCard';
 import VehicleSummary from '@/components/VehicleSummary';
 import MonthlySpendingChart from '@/components/MonthlySpendingChart';
-import FuelEfficiencyChart from '@/components/FuelEfficiencyChart'; // Novo Import
+import FuelEfficiencyChart from '@/components/FuelEfficiencyChart';
 import { DollarSign, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFuelingMetrics } from '@/hooks/useFuelingMetrics';
+import { useFuelingRecords } from '@/hooks/useFuelingRecords'; // Importando o hook de estado
 
 const DashboardPage: React.FC = () => {
-  const { averageEfficiency } = useFuelingMetrics();
+  // Obtendo os registros de abastecimento
+  const { records: fuelingRecords } = useFuelingRecords();
+  
+  // Passando os registros para o hook de métricas
+  const { averageEfficiency } = useFuelingMetrics(fuelingRecords);
 
   const efficiencyValue = averageEfficiency !== null 
     ? `${averageEfficiency} km/l` 
@@ -61,7 +66,8 @@ const DashboardPage: React.FC = () => {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2 grid gap-4 md:grid-cols-2">
           <MonthlySpendingChart />
-          <FuelEfficiencyChart />
+          {/* Passando os registros para o gráfico */}
+          <FuelEfficiencyChart fuelingRecords={fuelingRecords} />
         </div>
         
         {/* Alertas e Lembretes */}
