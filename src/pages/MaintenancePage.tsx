@@ -8,12 +8,12 @@ import { showSuccess, showError } from '@/utils/toast';
 import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
 import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard';
 import { useUpcomingMaintenance } from '@/hooks/useUpcomingMaintenance';
-import { useMileageRecords } from '@/hooks/useMileageRecords'; // Novo Import
-import { useFuelingRecords } from '@/hooks/useFuelingRecords'; // Novo Import
+import { useMileageRecords } from '@/hooks/useMileageRecords';
+import { useFuelingRecords } from '@/hooks/useFuelingRecords';
 
 const MaintenancePage: React.FC = () => {
-  const { records: fuelingRecords } = useFuelingRecords(); // Necessário para o hook de KM
-  const { currentMileage } = useMileageRecords(fuelingRecords); // Obtendo o KM atual
+  const { records: fuelingRecords } = useFuelingRecords();
+  const { currentMileage } = useMileageRecords(fuelingRecords);
 
   const { records, addOrUpdateRecord, deleteRecord } = useMaintenanceRecords();
   const upcomingRecord = useUpcomingMaintenance(records);
@@ -44,6 +44,20 @@ const MaintenancePage: React.FC = () => {
       deleteRecord(id);
       showSuccess('Registro de manutenção deletado.');
     }
+  };
+  
+  const handleComplete = (record: MaintenanceRecord) => {
+    // Ao concluir, abrimos o formulário para que o usuário possa confirmar o KM e o Custo, se necessário.
+    // Se o custo for 0 e o KM for 0, sugerimos que ele edite.
+    if (record.cost === 0 || record.mileage === 0) {
+        showError('Por favor, edite o registro para confirmar o KM e o Custo antes de concluir.');
+        handleEdit(record);
+        return;
+    }
+    
+    // Se já tiver KM e Custo, podemos concluir diretamente
+    addOrUpdateRecord({ ...record, status: 'Concluído' }, record.id);
+    showSuccess(`Manutenção '${record.type}' marcada como concluída!`);
   };
 
   const handleOpenDialog = () => {
@@ -80,14 +94,19 @@ const MaintenancePage: React.FC = () => {
         </div>
       </div>
 
-      <MaintenanceTable records={records} onEdit={handleEdit} onDelete={handleDelete} />
+      <MaintenanceTable 
+        records={records} 
+        onEdit={handleEdit} 
+        onDelete={handleDelete} 
+        onComplete={handleComplete} // Passando a nova função
+      />
 
       <MaintenanceFormDialog
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         recordToEdit={recordToEdit}
         onSubmit={handleAddOrEdit}
-        currentMileage={currentMileage} // Passando o KM atual
+        currentMileage={currentMileage}
       />
     </div>
   );
