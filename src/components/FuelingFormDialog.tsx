@@ -109,8 +109,8 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      {/* Adicionando max-h-[90vh] e overflow-y-auto para rolagem em mobile */}
-      <DialogContent className="sm:max-w-[480px] dark:bg-gray-900 dark:text-white max-h-[90vh] overflow-y-auto">
+      {/* Removendo sm:max-w-[480px] para permitir que o diálogo ocupe mais espaço em mobile, mas mantendo a rolagem */}
+      <DialogContent className="w-full max-w-md dark:bg-gray-900 dark:text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Fuel className="w-5 h-5 text-blue-500" />
@@ -126,47 +126,53 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
             <TabsList className="grid w-full grid-cols-2 dark:bg-gray-800">
               <TabsTrigger value="single" className="flex items-center space-x-2">
                 <Fuel className="w-4 h-4" />
-                <span>Abastecimento Único</span>
+                <span>Único</span>
               </TabsTrigger>
               <TabsTrigger value="trip" className="flex items-center space-x-2">
                 <Car className="w-4 h-4" />
-                <span>Registro de Viagem</span>
+                <span>Viagem</span>
               </TabsTrigger>
             </TabsList>
           )}
 
-          {/* Aba de Abastecimento Único (Formulário existente) */}
+          {/* Aba de Abastecimento Único (Formulário ajustado para mobile) */}
           <TabsContent value="single" className="mt-4">
             <form onSubmit={handleSubmitSingle} className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date" className="text-right dark:text-gray-300">Data</Label>
+              
+              {/* Data */}
+              <div className="space-y-2">
+                <Label htmlFor="date" className="dark:text-gray-300">Data</Label>
                 <Input
                   id="date"
                   type="date"
                   value={formData.date}
                   onChange={handleChange}
-                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   required
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="mileage" className="text-right dark:text-gray-300">KM</Label>
+              
+              {/* KM */}
+              <div className="space-y-2">
+                <Label htmlFor="mileage" className="dark:text-gray-300">KM</Label>
                 <Input
                   id="mileage"
                   type="number"
                   value={formData.mileage}
                   onChange={handleChange}
-                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   required
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="fuelType" className="text-right dark:text-gray-300">Combustível</Label>
+              
+              {/* Combustível */}
+              <div className="space-y-2">
+                <Label htmlFor="fuelType" className="dark:text-gray-300">Combustível</Label>
                 <Select
                   value={formData.fuelType}
                   onValueChange={(value) => handleSelectChange('fuelType', value as FuelingRecord['fuelType'])}
                 >
-                  <SelectTrigger className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                  <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
@@ -176,55 +182,63 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="volumeLiters" className="text-right dark:text-gray-300">Litros</Label>
+              
+              {/* Litros */}
+              <div className="space-y-2">
+                <Label htmlFor="volumeLiters" className="dark:text-gray-300">Litros</Label>
                 <Input
                   id="volumeLiters"
                   type="number"
                   step="0.01"
                   value={formData.volumeLiters}
                   onChange={handleChange}
-                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   required
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="costPerLiter" className="text-right dark:text-gray-300">Custo/L (R$)</Label>
+              
+              {/* Custo/L */}
+              <div className="space-y-2">
+                <Label htmlFor="costPerLiter" className="dark:text-gray-300">Custo/L (R$)</Label>
                 <Input
                   id="costPerLiter"
                   type="number"
                   step="0.01"
                   value={formData.costPerLiter}
                   onChange={handleChange}
-                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   required
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="totalCost" className="text-right dark:text-gray-300">Custo Total (R$)</Label>
+              
+              {/* Custo Total */}
+              <div className="space-y-2">
+                <Label htmlFor="totalCost" className="dark:text-gray-300">Custo Total (R$)</Label>
                 <Input
                   id="totalCost"
                   type="number"
                   step="0.01"
                   value={formData.totalCost}
                   onChange={handleChange}
-                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   required
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="station" className="text-right dark:text-gray-300">Posto</Label>
+              
+              {/* Posto */}
+              <div className="space-y-2">
+                <Label htmlFor="station" className="dark:text-gray-300">Posto</Label>
                 <Input
                   id="station"
                   type="text"
                   value={formData.station}
                   onChange={handleChange}
                   placeholder="Nome do posto"
-                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
               </div>
               
-              <Button type="submit" className="mt-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
+              <Button type="submit" className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
                 {isEditing ? 'Salvar Alterações' : 'Adicionar Abastecimento'}
               </Button>
             </form>
