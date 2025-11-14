@@ -1,7 +1,7 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import IndexPage from "./pages/IndexPage";
 import DashboardPage from "./pages/DashboardPage";
 import MaintenancePage from "./pages/MaintenancePage";
@@ -10,12 +10,23 @@ import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import MasterAdminPage from "./pages/MasterAdminPage";
 import NotFound from "./pages/NotFound";
-import AppLayout from "./components/AppLayout";
+import MainHeader from "./components/MainHeader";
 import ThemeProvider from "./components/ThemeProvider";
 import SessionContextProvider from "./components/SessionContextProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
+
+// Novo componente de Layout para rotas protegidas
+const ProtectedLayout = () => (
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+        <MainHeader />
+        {/* Conteúdo Principal */}
+        <main className="flex-grow overflow-y-auto">
+            <Outlet />
+        </main>
+    </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -30,7 +41,7 @@ const App = () => (
               
               {/* Rotas protegidas/com layout */}
               <Route path="/" element={<ProtectedRoute />}>
-                <Route path="/" element={<AppLayout />}>
+                <Route path="/" element={<ProtectedLayout />}>
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="maintenance" element={<MaintenancePage />} />
                   <Route path="fueling" element={<FuelingPage />} />
@@ -40,9 +51,8 @@ const App = () => (
               </Route>
               
               {/* Rota de Admin Master (Protegida e restrita a administradores) */}
-              {/* Esta rota precisa do AppLayout, mas o MasterAdminPage gerencia suas próprias sub-rotas */}
               <Route path="/" element={<ProtectedRoute adminOnly={true} />}>
-                <Route path="/" element={<AppLayout />}>
+                <Route path="/" element={<ProtectedLayout />}>
                     {/* Usamos /* para indicar que MasterAdminPage gerencia rotas aninhadas */}
                     <Route path="master-admin/*" element={<MasterAdminPage />} /> 
                 </Route>

@@ -24,18 +24,19 @@ const toDbInsert = (record: Omit<VehicleData, 'id'>, userId: string): VehicleDat
 
 // --- Funções de Busca ---
 
-const fetchVehicle = async (userId: string): Promise<VehicleData | null> => {
+// Agora busca TODOS os veículos do usuário
+const fetchVehicles = async (userId: string): Promise<VehicleData[]> => {
   const { data, error } = await supabase
     .from('vehicles')
     .select('*')
     .eq('user_id', userId)
-    .single();
+    .order('created_at', { ascending: true });
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
+  if (error) {
     throw new Error(error.message);
   }
   
-  return data ? fromDb(data) : null;
+  return data ? data.map(fromDb) : [];
 };
 
 // --- Hooks de Query e Mutação ---
@@ -44,11 +45,12 @@ export const useVehicleQuery = () => {
   const { user } = useSession();
   const userId = user?.id;
 
-  return useQuery<VehicleData | null, Error>({
+  // Retorna uma lista de VehicleData
+  return useQuery<VehicleData[], Error>({
     queryKey: [VEHICLE_KEY, userId],
     queryFn: () => {
-      if (!userId) return Promise.resolve(null);
-      return fetchVehicle(userId);
+      if (!userId) return Promise.resolve([]);
+      return fetchVehicles(userId);
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 60, // 1 hour
@@ -70,32 +72,41 @@ export const useVehicleMutations = () => {
       
       const dbRecord = toDbInsert(record, userId);
       
-      // Se tiver um ID, atualiza. Se não, insere (ou usa upsert se fosse mais complexo)
+      let data;
+      let error;
+      
       if (record.vehicleId) {
-        const { data, error } = await supabase
+        // Atualiza
+        ({ data, error } = await supabase
           .from('vehicles')
           .update(dbRecord)
           .eq('id', record.vehicleId)
           .select()
-          .single();
-          
-        if (error) throw new Error(error.message);
-        return fromDb(data);
+          .single());
       } else {
-        // Tenta inserir. Se falhar devido à restrição UNIQUE (user_id), o usuário já tem um veículo.
-        const { data, error } = await supabase
+        // Insere
+        ({ data, error } = await supabase
           .from('vehicles')
           .insert(dbRecord)
           .select()
-          .single();
-
-        if (error) throw new Error(error.message);
-        return fromDb(data);
+          .single());
       }
+          
+      if (error) throw new Error(error.message);
+      return fromDb(data);
     },
-    onSuccess: () => {
+    onSuccess: (newVehicle) => {
         invalidateQuery();
         showSuccess('Detalhes do veículo salvos com sucesso!');
+        // Se for uma nova inserção, precisamos garantir que ele se torne o veículo ativo
+        if (!newVehicle.id) {
+            queryClient.setQueryData([VEHICLE_KEY, userId], (oldData: VehicleData[] = []) => {
+                if (!oldData.some(v => v.id === newVehicle.id)) {
+                    return [...oldData, newVehicle];
+                }
+                return oldData;
+            });
+        }
     },
     onError: (error) => showError(`Erro ao salvar veículo: ${error.message}`),
   });
@@ -112,10 +123,7 @@ export const useVehicleMutations = () => {
 
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => {
-        invalidateQuery();
-        showSuccess('Veículo removido com sucesso.');
-    },
+    onSuccess: invalidateQuery,
     onError: (error) => showError(`Erro ao remover veículo: ${error.message}`),
   });
 
