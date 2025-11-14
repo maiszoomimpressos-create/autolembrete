@@ -1,7 +1,9 @@
 import React from 'react';
 import MetricCard from '@/components/MetricCard';
 import VehicleSummary from '@/components/VehicleSummary';
+import MonthlySpendingChart from '@/components/MonthlySpendingChart';
 import { DollarSign, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Importando Card para a seção de Alertas
 
 const DashboardPage: React.FC = () => {
   return (
@@ -43,31 +45,32 @@ const DashboardPage: React.FC = () => {
         />
       </div>
 
-      {/* Seção de Alertas e Gráficos (Placeholder) */}
+      {/* Seção de Alertas e Gráficos */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
-          <h3 className="text-xl font-semibold mb-4 dark:text-white">Gráfico de Gastos Mensais</h3>
-          <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
-            Gráfico de Recharts será implementado aqui.
-          </div>
+        <div className="lg:col-span-2">
+          <MonthlySpendingChart />
         </div>
-        <div className="bg-white p-6 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
-          <h3 className="text-xl font-semibold mb-4 dark:text-white">Alertas e Lembretes</h3>
-          <ul className="space-y-3 text-sm dark:text-gray-300">
-            <li className="flex items-center text-red-500">
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              Troca de Pneus (Vencida)
-            </li>
-            <li className="flex items-center text-yellow-500">
-              <Clock className="w-4 h-4 mr-2" />
-              Próxima Revisão em 30 dias
-            </li>
-            <li className="flex items-center text-green-500">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              IPVA Pago (2024)
-            </li>
-          </ul>
-        </div>
+        <Card className="bg-white p-6 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+          <CardHeader className="p-0 mb-4">
+            <CardTitle className="text-xl font-semibold dark:text-white">Alertas e Lembretes</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ul className="space-y-3 text-sm dark:text-gray-300">
+              <li className="flex items-center text-red-500">
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Troca de Pneus (Vencida)
+              </li>
+              <li className="flex items-center text-yellow-500">
+                <Clock className="w-4 h-4 mr-2" />
+                Próxima Revisão em 30 dias
+              </li>
+              <li className="flex items-center text-green-500">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                IPVA Pago (2024)
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
