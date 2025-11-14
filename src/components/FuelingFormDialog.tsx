@@ -11,6 +11,7 @@ import TripFuelingForm from './TripFuelingForm';
 import { useVehicle } from '@/hooks/useVehicle';
 import { cn } from '@/lib/utils';
 import { showError } from '@/utils/toast';
+import GasStationCombobox from './GasStationCombobox'; // Importando o novo componente
 
 interface FuelingFormDialogProps {
   isOpen: boolean;
@@ -95,6 +96,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
         // Se Custo Total mudar, recalcula Custo/L
         newFormData.costPerLiter = calculateCostPerLiter(parsedValue, prev.volumeLiters);
       } else if (id === 'station' || id === 'date') {
+        // Este bloco não será mais usado para 'station'
         (newFormData as any)[id] = value;
       }
 
@@ -106,6 +108,13 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
     setFormData(prev => ({
       ...prev,
       [id]: value,
+    }));
+  };
+  
+  const handleStationSelect = (stationName: string) => {
+    setFormData(prev => ({
+        ...prev,
+        station: stationName,
     }));
   };
 
@@ -265,17 +274,16 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
                 />
               </div>
               
-              {/* Posto */}
+              {/* Posto (Substituído pelo Combobox) */}
               <div className="space-y-2">
                 <Label htmlFor="station" className="dark:text-gray-300">Posto</Label>
-                <Input
-                  id="station"
-                  type="text"
-                  value={formData.station}
-                  onChange={handleChange}
-                  placeholder="Nome do posto"
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                <GasStationCombobox 
+                    selectedStationName={formData.station}
+                    onStationSelect={handleStationSelect}
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Selecione um posto existente ou adicione um novo.
+                </p>
               </div>
               
               <Button 

@@ -8,6 +8,7 @@ import { FuelingRecord } from '@/types/fueling';
 import { Plus, Trash2, Gauge, TrendingUp } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useVehicle } from '@/hooks/useVehicle';
+import GasStationCombobox from './GasStationCombobox'; // Importando o Combobox
 
 // Tipo auxiliar para o estado do formulário de viagem
 interface TripRecord extends Omit<FuelingRecord, 'id' | 'vehicleId'> {}
@@ -135,6 +136,14 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
       }
 
       return newRecords;
+    });
+  };
+  
+  const handleStationSelect = (index: number, stationName: string) => {
+    setTripRecords(prev => {
+        const newRecords = [...prev];
+        newRecords[index].station = stationName;
+        return newRecords;
     });
   };
 
@@ -273,13 +282,9 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`station-${index}`}>Posto</Label>
-                  <Input
-                    id={`station-${index}`}
-                    type="text"
-                    value={record.station}
-                    onChange={(e) => handleChange(index, 'station', e.target.value)}
-                    placeholder="Nome do posto"
-                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  <GasStationCombobox 
+                    selectedStationName={record.station}
+                    onStationSelect={(name) => handleStationSelect(index, name)}
                   />
                 </div>
                 <div className="space-y-2 col-span-2">
