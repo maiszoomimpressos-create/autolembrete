@@ -14,7 +14,7 @@ import {
   LogOut,
   Fuel,
   Shield,
-  Gauge, // Novo Import
+  Gauge,
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
 import { useProfile } from '@/hooks/useProfile';
@@ -24,7 +24,7 @@ import { useMileageRecords } from '@/hooks/useMileageRecords';
 import { useMileageAlerts } from '@/hooks/useMileageAlerts';
 import { useDateAlerts } from '@/hooks/useDateAlerts';
 import { Badge } from '@/components/ui/badge';
-import MileageInputDialog from './MileageInputDialog'; // Novo Import
+import MileageInputDialog from './MileageInputDialog';
 
 interface NavItem {
   path: string;
@@ -46,7 +46,7 @@ const MainHeader: React.FC = () => {
   const { user, signOut, isAdmin } = useSession();
   const { profile } = useProfile();
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
-  const [isMileageDialogOpen, setIsMileageDialogOpen] = useState(false); // Novo estado para o diálogo de KM
+  const [isMileageDialogOpen, setIsMileageDialogOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   
   // Hooks de Alerta
@@ -190,15 +190,16 @@ const MainHeader: React.FC = () => {
                 </Button>
             )}
             
-            {/* Botão de Registro de KM Rápido */}
+            {/* Botão de Registro de KM Rápido (Visível em todas as telas) */}
             <Button
               variant="outline"
               size="sm"
-              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-700 hidden sm:flex"
+              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-700"
               onClick={() => setIsMileageDialogOpen(true)}
             >
               <Gauge className="w-4 h-4 mr-2" />
-              Registrar KM
+              <span className="hidden sm:inline">Registrar KM</span>
+              <span className="sm:hidden">KM</span>
             </Button>
             
             {/* Botão de Alertas */}
