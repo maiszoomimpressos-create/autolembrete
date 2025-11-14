@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MileageRecord, MileageRecordInsert } from '@/types/mileage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/components/SessionContextProvider';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 
 const MILEAGE_RECORDS_KEY = 'mileage_records';
 
@@ -86,9 +86,29 @@ export const useMileageMutations = () => {
     onSuccess: invalidateQuery,
     onError: (error) => showError(`Erro ao adicionar KM: ${error.message}`),
   });
+  
+  const deleteRecordMutation = useMutation<void, Error, string>({
+    mutationFn: async (id) => {
+      if (!userId) throw new Error('User not authenticated.');
+      
+      const { error } = await supabase
+        .from('mileage_records')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+        invalidateQuery();
+        showSuccess('Registro de quilometragem manual deletado.');
+    },
+    onError: (error) => showError(`Erro ao deletar KM: ${error.message}`),
+  });
 
   return {
     addManualRecord: addRecordMutation.mutateAsync,
-    isMutating: addRecordMutation.isPending,
+    deleteManualRecord: deleteRecordMutation.mutateAsync,
+    isMutating: addRecordMutation.isPending || deleteRecordMutation.isPending,
   };
 };

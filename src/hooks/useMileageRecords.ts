@@ -6,11 +6,15 @@ import { useManualMileageRecordsQuery, useMileageMutations } from '@/integration
 export const useMileageRecords = (fuelingRecords: FuelingRecord[]) => {
   // Busca registros manuais do Supabase
   const { data: manualRecords = [], isLoading: isLoadingManual } = useManualMileageRecordsQuery();
-  const { addManualRecord: addManualRecordMutation, isMutating } = useMileageMutations();
+  const { addManualRecord: addManualRecordMutation, deleteManualRecord: deleteManualRecordMutation, isMutating } = useMileageMutations();
 
   const addManualRecord = useCallback(async (date: string, mileage: number) => {
     await addManualRecordMutation({ date, mileage });
   }, [addManualRecordMutation]);
+  
+  const deleteManualRecord = useCallback(async (id: string) => {
+    await deleteManualRecordMutation(id);
+  }, [deleteManualRecordMutation]);
 
   const allMileageRecords = useMemo(() => {
     // Converter FuelingRecords para MileageRecords
@@ -44,6 +48,7 @@ export const useMileageRecords = (fuelingRecords: FuelingRecord[]) => {
     allMileageRecords,
     currentMileage,
     addManualRecord,
+    deleteManualRecord, // Expondo a função de exclusão
     isLoading: isLoadingManual,
     isMutating,
   };

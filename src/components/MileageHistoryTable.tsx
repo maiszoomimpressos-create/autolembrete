@@ -8,11 +8,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Gauge, History } from 'lucide-react';
+import { Gauge, Trash2 } from 'lucide-react';
 import { MileageRecord } from '@/types/mileage';
+import { Button } from '@/components/ui/button';
 
 interface MileageHistoryTableProps {
   records: MileageRecord[];
+  onDeleteManual: (id: string) => void; // Nova prop para exclusão
+  isMutating: boolean;
 }
 
 const getSourceVariant = (source: MileageRecord['source']) => {
@@ -26,7 +29,7 @@ const getSourceVariant = (source: MileageRecord['source']) => {
   }
 };
 
-const MileageHistoryTable: React.FC<MileageHistoryTableProps> = ({ records }) => {
+const MileageHistoryTable: React.FC<MileageHistoryTableProps> = ({ records, onDeleteManual, isMutating }) => {
   if (records.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -46,6 +49,7 @@ const MileageHistoryTable: React.FC<MileageHistoryTableProps> = ({ records }) =>
             <TableHead>Quilometragem (KM)</TableHead>
             <TableHead>Fonte</TableHead>
             <TableHead>Observação</TableHead>
+            <TableHead className="w-[100px] text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -64,6 +68,21 @@ const MileageHistoryTable: React.FC<MileageHistoryTableProps> = ({ records }) =>
                 {record.source === 'Manual' 
                     ? 'Registro manual do odômetro.' 
                     : 'Registro obtido de um abastecimento.'}
+              </TableCell>
+              <TableCell className="text-right">
+                {record.source === 'Manual' ? (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onDeleteManual(record.id)}
+                    disabled={isMutating}
+                    title="Excluir registro manual"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                ) : (
+                  <span className="text-gray-400 dark:text-gray-600 text-xs">N/A</span>
+                )}
               </TableCell>
             </TableRow>
           ))}

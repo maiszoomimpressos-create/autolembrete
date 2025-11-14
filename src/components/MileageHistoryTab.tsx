@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Filter, Gauge, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,9 +9,15 @@ import MileageHistoryTable from './MileageHistoryTable';
 const MileageHistoryTab: React.FC = () => {
   // Precisamos dos registros de abastecimento para o hook de KM
   const { records: fuelingRecords, isLoading: isLoadingFueling } = useFuelingRecords();
-  const { allMileageRecords, isLoading: isLoadingManual } = useMileageRecords(fuelingRecords);
+  const { allMileageRecords, deleteManualRecord, isLoading: isLoadingManual, isMutating } = useMileageRecords(fuelingRecords);
   
   const isLoading = isLoadingFueling || isLoadingManual;
+  
+  const handleDeleteManual = useCallback(async (id: string) => {
+    if (window.confirm('Tem certeza que deseja deletar este registro manual de quilometragem?')) {
+        await deleteManualRecord(id);
+    }
+  }, [deleteManualRecord]);
 
   if (isLoading) {
     return (
@@ -32,7 +38,11 @@ const MileageHistoryTab: React.FC = () => {
       </div>
       <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardContent className="p-0">
-          <MileageHistoryTable records={allMileageRecords} />
+          <MileageHistoryTable 
+            records={allMileageRecords} 
+            onDeleteManual={handleDeleteManual}
+            isMutating={isMutating}
+          />
         </CardContent>
       </Card>
     </div>
