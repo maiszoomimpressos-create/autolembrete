@@ -109,7 +109,8 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] dark:bg-gray-900 dark:text-white">
+      {/* Adicionando max-h-[90vh] e overflow-y-auto para rolagem em mobile */}
+      <DialogContent className="sm:max-w-[480px] dark:bg-gray-900 dark:text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Fuel className="w-5 h-5 text-blue-500" />
