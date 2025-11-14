@@ -42,7 +42,8 @@ const MainHeader: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (avatarMenuRef.current && !avatarMenuMenuRef.current.contains(event.target as Node)) {
+      // CORREÇÃO: Usando avatarMenuRef em vez de avatarMenuMenuRef
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
         setIsAvatarMenuOpen(false);
       }
     };
@@ -54,6 +55,16 @@ const MainHeader: React.FC = () => {
 
   const handleAvatarClick = () => {
     setIsAvatarMenuOpen(!isAvatarMenuOpen);
+  };
+  
+  const handleMenuItemClick = (path: string) => {
+    setIsAvatarMenuOpen(false);
+    if (path === '/logout') {
+        signOut();
+        navigate('/');
+    } else {
+        navigate(path);
+    }
   };
   
   const getDisplayName = () => {
