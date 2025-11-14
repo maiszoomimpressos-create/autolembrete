@@ -186,7 +186,8 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] dark:bg-gray-900 dark:text-white">
+      {/* Adicionando 'overflow-y-auto' e 'max-h-[90vh]' para garantir rolagem em mobile */}
+      <DialogContent className="sm:max-w-[600px] dark:bg-gray-900 dark:text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Wrench className="w-5 h-5 text-blue-500" />
@@ -213,6 +214,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
             )}
         </div>
 
+        {/* O formulário em si não precisa de rolagem, pois o DialogContent já está rolando */}
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           
           {/* Seção de Detalhes Principais */}
