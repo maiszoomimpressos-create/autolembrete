@@ -40,11 +40,16 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   const isCreatingFromAlert = !!alertToCreateFrom;
   const title = isEditing ? 'Editar Manutenção' : (isCreatingFromAlert ? 'Registrar Manutenção Recorrente' : 'Adicionar Nova Manutenção');
 
+  // Determina o tipo inicial: usa o primeiro tipo disponível ou 'Outro' se a lista estiver vazia.
+  const initialType = allServiceTypes.length > 0 && allServiceTypes[0] !== 'Outro' 
+    ? allServiceTypes[0] 
+    : 'Outro';
+
   // Estado inicial padrão
   const initialFormData: FormDataState = {
     date: new Date().toISOString().split('T')[0],
     mileage: currentMileage,
-    type: 'Troca de Óleo',
+    type: initialType as MaintenanceRecord['type'], // Usa o tipo inicial determinado
     customType: '',
     description: '',
     cost: 0,
@@ -74,12 +79,13 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         const typeFromAlert = alertToCreateFrom.type as MaintenanceRecord['type'];
         
         // Verifica se o tipo do alerta é um dos tipos padrão ou um tipo personalizado
-        const isCustomType = !['Troca de Óleo', 'Revisão Geral', 'Pneus', 'Freios', 'Outro'].includes(typeFromAlert);
+        // Como removemos os tipos padrão, verificamos se o tipo do alerta existe na lista atual
+        const isCustomType = !allServiceTypes.includes(typeFromAlert);
         
         setFormData({
             date: new Date().toISOString().split('T')[0],
             mileage: currentMileage, // Sugere o KM atual
-            type: isCustomType ? 'Outro' : typeFromAlert, // Se for personalizado, define como 'Outro'
+            type: isCustomType ? 'Outro' : typeFromAlert, // Se não estiver na lista, usa 'Outro'
             customType: isCustomType ? alertToCreateFrom.type : '', // E usa o nome real no customType
             description: `Serviço de ${alertToCreateFrom.type} realizado.`,
             cost: 0, // Custo deve ser preenchido
@@ -92,9 +98,17 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         
     } else {
       // Modo Criação Padrão
-      setFormData(initialFormData);
+      // Recalcula o estado inicial com base na lista atualizada de tipos
+      const currentInitialType = allServiceTypes.length > 0 && allServiceTypes[0] !== 'Outro' 
+        ? allServiceTypes[0] 
+        : 'Outro';
+        
+      setFormData({
+        ...initialFormData,
+        type: currentInitialType as MaintenanceRecord['type'],
+      });
     }
-  }, [recordToEdit, alertToCreateFrom, isOpen, currentMileage]);
+  }, [recordToEdit, alertToCreateFrom, isOpen, currentMileage, allServiceTypes]); // Adicionado allServiceTypes como dependência
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -229,7 +243,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                  {/* Usando allServiceTypes que inclui 'Outro' */}
+                  {/* Usando allServiceTypes que agora contém apenas tipos personalizados + 'Outro' */}
                   {allServiceTypes.map(type => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
