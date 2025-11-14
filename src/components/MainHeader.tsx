@@ -5,44 +5,27 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   Car,
-  LayoutDashboard,
-  Wrench,
-  History,
   Settings,
   Bell,
   User,
   LogOut,
-  Fuel,
   Shield,
+  Menu, // Adicionando ícone de menu para mobile
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
-import { useProfile } from '@/hooks/useProfile'; // Novo Import
-
-interface NavItem {
-  path: string;
-  label: string;
-  icon: React.ElementType;
-}
-
-const navItems: NavItem[] = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/maintenance', label: 'Manutenções', icon: Wrench },
-  { path: '/fueling', label: 'Abastecimentos', icon: Fuel },
-  { path: '/history', label: 'Histórico', icon: History },
-  { path: '/settings', label: 'Configurações', icon: Settings },
-];
+import { useProfile } from '@/hooks/useProfile'; 
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import Sidebar from './Sidebar'; // Importando Sidebar para uso no menu mobile
 
 const MainHeader: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, signOut, isAdmin } = useSession();
-  const { profile } = useProfile(); // Usando o hook de perfil
+  const { profile } = useProfile(); 
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // CORREÇÃO: Usando avatarMenuRef em vez de avatarMenuMenuRef
       if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
         setIsAvatarMenuOpen(false);
       }
@@ -97,7 +80,7 @@ const MainHeader: React.FC = () => {
                 <>
                     <button
                       onClick={() => handleMenuItemClick('/master-admin')}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20"
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20 dark:text-red-400"
                     >
                       <Shield className="w-4 h-4 text-red-500" />
                       <span>Admin Master</span>
@@ -123,7 +106,7 @@ const MainHeader: React.FC = () => {
             <Separator className="my-1 dark:bg-gray-700" />
             <button
               onClick={() => handleMenuItemClick('/logout')}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20"
+              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20 dark:text-red-400"
             >
               <LogOut className="w-4 h-4 text-red-500" />
               <span>Sair</span>
@@ -136,42 +119,40 @@ const MainHeader: React.FC = () => {
 
   return (
     <header className="bg-white shadow-sm border-b dark:bg-gray-900 dark:border-gray-800 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <Car className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Autolembrete</h1>
+          
+          {/* Menu Mobile e Logo */}
+          <div className="flex items-center space-x-3">
+            {/* Menu Hamburger para Mobile */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden dark:hover:bg-gray-800">
+                  <Menu className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-64 dark:bg-gray-900">
+                {/* Reutiliza a Sidebar no menu mobile */}
+                <div className="pt-16 h-full">
+                    <Sidebar />
+                </div>
+              </SheetContent>
+            </Sheet>
+            
+            {/* Logo */}
+            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+              <Car className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Autolembrete</h1>
+            </div>
           </div>
+          
+          {/* Navegação Principal (Removida) */}
           <nav className="hidden md:flex space-x-2 lg:space-x-8">
-            {navItems.map((item) => {
-              const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
-              const Icon = item.icon;
-              return (
-                <Button
-                  key={item.path}
-                  variant={isActive ? 'default' : 'ghost'}
-                  className={`cursor-pointer whitespace-nowrap !rounded-button ${isActive ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
-                  onClick={() => navigate(item.path)}
-                >
-                  <Icon className="w-4 h-4 mr-2" />
-                  {item.label}
-                </Button>
-              );
-            })}
+            {/* A navegação principal foi movida para a Sidebar */}
           </nav>
+          
+          {/* Ações do Usuário */}
           <div className="flex items-center space-x-4">
-            {/* Botão de Administrador Master na barra de navegação principal (opcional, mas útil) */}
-            {isAdmin && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="cursor-pointer whitespace-nowrap !rounded-button text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 hidden lg:flex"
-                  onClick={() => navigate('/master-admin')}
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Admin Master
-                </Button>
-            )}
             <Button
               variant="ghost"
               size="sm"
