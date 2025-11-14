@@ -5,32 +5,21 @@ import MaintenanceTable from '@/components/MaintenanceTable';
 import MaintenanceFormDialog from '@/components/MaintenanceFormDialog';
 import { MaintenanceRecord } from '@/types/maintenance';
 import { showSuccess, showError } from '@/utils/toast';
-
-// Dados simulados iniciais
-const initialRecords: MaintenanceRecord[] = [
-  { id: '1', date: '2024-07-01', mileage: 45200, type: 'Troca de Óleo', description: 'Óleo 5W-30 sintético e filtro de óleo.', cost: 350.00, status: 'Concluído' },
-  { id: '2', date: '2024-06-15', mileage: 44500, type: 'Pneus', description: 'Rodízio e balanceamento dos 4 pneus.', cost: 120.00, status: 'Concluído' },
-  { id: '3', date: '2024-08-20', mileage: 50000, type: 'Revisão Geral', description: 'Revisão completa de 50.000 km.', cost: 0, status: 'Agendado' },
-  { id: '4', date: '2024-07-25', mileage: 46000, type: 'Freios', description: 'Troca de pastilhas dianteiras.', cost: 480.50, status: 'Pendente' },
-];
+import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
 
 const MaintenancePage: React.FC = () => {
-  const [records, setRecords] = useState<MaintenanceRecord[]>(initialRecords);
+  const { records, addOrUpdateRecord, deleteRecord } = useMaintenanceRecords();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MaintenanceRecord | null>(null);
 
   const handleAddOrEdit = (data: Omit<MaintenanceRecord, 'id'>) => {
     if (recordToEdit) {
       // Edição
-      setRecords(prev => prev.map(r => r.id === recordToEdit.id ? { ...data, id: r.id } : r));
+      addOrUpdateRecord(data, recordToEdit.id);
       showSuccess('Manutenção atualizada com sucesso!');
     } else {
       // Adição
-      const newRecord: MaintenanceRecord = {
-        ...data,
-        id: Date.now().toString(), // ID simples para simulação
-      };
-      setRecords(prev => [newRecord, ...prev]);
+      addOrUpdateRecord(data);
       showSuccess('Nova manutenção adicionada!');
     }
     setRecordToEdit(null);
@@ -43,7 +32,7 @@ const MaintenancePage: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('Tem certeza que deseja deletar este registro de manutenção?')) {
-      setRecords(prev => prev.filter(r => r.id !== id));
+      deleteRecord(id);
       showSuccess('Registro de manutenção deletado.');
     }
   };

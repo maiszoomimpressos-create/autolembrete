@@ -4,15 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import MaintenanceTable from '@/components/MaintenanceTable';
 import { MaintenanceRecord } from '@/types/maintenance';
-
-// Dados simulados (filtrando apenas os concluídos para o histórico)
-const historicalRecords: MaintenanceRecord[] = [
-  { id: '1', date: '2024-07-01', mileage: 45200, type: 'Troca de Óleo', description: 'Óleo 5W-30 sintético e filtro de óleo.', cost: 350.00, status: 'Concluído' },
-  { id: '2', date: '2024-06-15', mileage: 44500, type: 'Pneus', description: 'Rodízio e balanceamento dos 4 pneus.', cost: 120.00, status: 'Concluído' },
-  { id: '5', date: '2023-12-01', mileage: 30000, type: 'Revisão Geral', description: 'Revisão de 30.000 km, troca de velas e correias.', cost: 1800.00, status: 'Concluído' },
-];
+import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
 
 const HistoryPage: React.FC = () => {
+  const { records } = useMaintenanceRecords();
+  
+  // Filtrando apenas os registros concluídos para o histórico
+  const historicalRecords: MaintenanceRecord[] = records.filter(r => r.status === 'Concluído');
+
   // Funções de edição e exclusão vazias, pois o histórico é geralmente somente leitura
   const handleEdit = () => {};
   const handleDelete = () => {};
