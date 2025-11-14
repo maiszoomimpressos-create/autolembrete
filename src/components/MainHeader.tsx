@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -75,6 +75,8 @@ const MainHeader: React.FC = () => {
   const { alerts: dateAlerts } = useDateAlerts(maintenanceRecords);
   const totalAlerts = mileageAlerts.length + dateAlerts.length;
 
+  // Removendo useEffect e handleAvatarClick, pois o DropdownMenu gerencia o estado de abertura
+
   const handleMenuItemClick = (path: string) => {
     if (path === '/logout') {
         signOut();
@@ -103,13 +105,12 @@ const MainHeader: React.FC = () => {
             const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
             const Icon = item.icon;
             
-            // Tratamento especial para o link de Alertas, que já tem um botão dedicado
             const isAlertsLink = item.path === '/alerts';
             
             return (
                 <DropdownMenuItem
                     key={item.path}
-                    onClick={() => handleMenuItemClick(item.path)}
+                    onClick={() => navigate(item.path)}
                     className={`cursor-pointer flex items-center space-x-3 ${isActive ? 'bg-gray-100 dark:bg-gray-700/50' : 'dark:hover:bg-gray-700'}`}
                 >
                     <Icon className={`w-4 h-4 ${isAlertsLink && totalAlerts > 0 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`} />
@@ -169,7 +170,7 @@ const MainHeader: React.FC = () => {
             {getDisplayName()}
         </DropdownMenuLabel>
         
-        <DropdownMenuSeparator className="dark:bg-gray-700" />
+        <DropdownMenuSeparator className="my-1 dark:bg-gray-700" />
         
         {/* Links de Navegação */}
         {renderNavLinksAsDropdown()}
