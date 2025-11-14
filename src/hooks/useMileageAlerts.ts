@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { MaintenanceRecord } from '@/types/maintenance';
-import { FuelingRecord } from '@/types/fueling';
 
 interface MileageAlert {
   id: string;
@@ -14,23 +13,19 @@ const ALERT_THRESHOLD_KM = 1000; // Alerta se estiver a 1000km ou menos
 
 export const useMileageAlerts = (
   maintenanceRecords: MaintenanceRecord[],
-  fuelingRecords: FuelingRecord[]
+  currentMileage: number
 ) => {
   const alerts = useMemo(() => {
-    // 1. Determinar o KM Atual (KM do último abastecimento)
-    const sortedFueling = [...fuelingRecords].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const currentMileage = sortedFueling.length > 0 ? sortedFueling[0].mileage : 0;
-
     if (currentMileage === 0) {
-      return { currentMileage: 0, alerts: [] };
+      return { alerts: [] };
     }
 
-    // 2. Filtrar manutenções concluídas que possuem um KM de alerta futuro
+    // 1. Filtrar manutenções concluídas que possuem um KM de alerta futuro
     const relevantRecords = maintenanceRecords.filter(r => 
       r.status === 'Concluído' && r.nextMileage && r.nextMileage > currentMileage
     );
     
-    // 3. Filtrar manutenções atrasadas (KM de alerta já passou)
+    // 2. Filtrar manutenções atrasadas (KM de alerta já passou)
     const overdueRecords = maintenanceRecords.filter(r => 
       r.status === 'Concluído' && r.nextMileage && r.nextMileage <= currentMileage
     );
@@ -78,10 +73,9 @@ export const useMileageAlerts = (
     });
 
     return {
-      currentMileage,
       alerts: mileageAlerts,
     };
-  }, [maintenanceRecords, fuelingRecords]);
+  }, [maintenanceRecords, currentMileage]);
 
   return alerts;
 };
