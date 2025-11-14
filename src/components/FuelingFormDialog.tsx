@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FuelingRecord } from '@/types/fueling';
-import { Fuel, Car } from 'lucide-react';
+import { Fuel, Car, RefreshCw } from 'lucide-react'; // Adicionando RefreshCw
 import TripFuelingForm from './TripFuelingForm';
 import { useVehicle } from '@/hooks/useVehicle';
 import { cn } from '@/lib/utils';
 import { showError } from '@/utils/toast';
-import GasStationCombobox from './GasStationCombobox'; // Importando o novo componente
+import GasStationCombobox from './GasStationCombobox';
+import { useAveragePriceQuery } from '@/hooks/useAveragePrice'; // Importando o novo hook
 
 interface FuelingFormDialogProps {
   isOpen: boolean;
@@ -44,6 +45,9 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
 
   const [formData, setFormData] = React.useState<Omit<FuelingRecord, 'id'>>(initialFormData);
   const [activeTab, setActiveTab] = React.useState<'single' | 'trip'>(isEditing ? 'single' : 'single');
+  
+  // Estado para controlar se o preço foi preenchido manualmente ou é o preço sugerido
+  const [isPriceSuggested, setIsPriceSuggested] = React.useState(false);
 
   React.useEffect(() => {
     if (recordToEdit) {
@@ -58,10 +62,40 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
         vehicleId: recordToEdit.vehicleId,
       });
       setActiveTab('single'); 
+      setIsPriceSuggested(false); // Ao editar, assume que o preço é o valor real
     } else {
       setFormData({ ...initialFormData, vehicleId: activeVehicle.id });
+      setIsPriceSuggested(false);
     }
   }, [recordToEdit, isOpen, activeVehicle.id]);
+
+  // Hook para buscar o preço médio
+  const { data: averagePrice, isLoading: isLoadingPrice } = useAveragePriceQuery(
+    { 
+        fuelType: formData.fuelType, 
+        stationName: formData.station 
+    }, 
+    isOpen && activeTab === 'single' && !isEditing // Habilita a query apenas quando o modal está aberto e não está editando
+  );
+  
+  // Efeito para aplicar o preço sugerido
+  React.useEffect(() => {
+      if (averagePrice !== null && averagePrice > 0 && !isEditing && !isPriceSuggested) {
+          setFormData(prev => {
+              // Aplica o preço sugerido e recalcula o custo total (se litros já estiver preenchido)
+              const newCostPerLiter = averagePrice;
+              const newTotalCost = calculateTotalCost(prev.volumeLiters, newCostPerLiter);
+              
+              return {
+                  ...prev,
+                  costPerLiter: newCostPerLiter,
+                  totalCost: newTotalCost,
+              };
+          });
+          setIsPriceSuggested(true);
+      }
+  }, [averagePrice, isEditing, isPriceSuggested]);
+
 
   const calculateTotalCost = (liters: number, costPerL: number) => {
     return parseFloat((liters * costPerL).toFixed(2));
@@ -77,6 +111,11 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     const parsedValue = parseFloat(value) || 0;
+    
+    // Se o usuário interagir com qualquer campo de preço/volume, desativa a sugestão
+    if (['volumeLiters', 'costPerLiter', 'totalCost'].includes(id)) {
+        setIsPriceSuggested(false);
+    }
     
     setFormData(prev => {
       let newFormData = { ...prev, [id]: value };
@@ -95,8 +134,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
         newFormData.totalCost = parsedValue;
         // Se Custo Total mudar, recalcula Custo/L
         newFormData.costPerLiter = calculateCostPerLiter(parsedValue, prev.volumeLiters);
-      } else if (id === 'station' || id === 'date') {
-        // Este bloco não será mais usado para 'station'
+      } else if (id === 'date') {
         (newFormData as any)[id] = value;
       }
 
@@ -109,6 +147,11 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
       ...prev,
       [id]: value,
     }));
+    
+    // Se mudar o tipo de combustível, resetamos a sugestão para buscar o novo preço
+    if (id === 'fuelType') {
+        setIsPriceSuggested(false);
+    }
   };
   
   const handleStationSelect = (stationName: string) => {
@@ -116,6 +159,22 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
         ...prev,
         station: stationName,
     }));
+    // Se mudar o posto, resetamos a sugestão para buscar o novo preço
+    setIsPriceSuggested(false);
+  };
+  
+  const handleApplySuggestedPrice = () => {
+      if (averagePrice !== null && averagePrice > 0) {
+          setFormData(prev => {
+              const newTotalCost = calculateTotalCost(prev.volumeLiters, averagePrice);
+              return {
+                  ...prev,
+                  costPerLiter: averagePrice,
+                  totalCost: newTotalCost,
+              };
+          });
+          setIsPriceSuggested(true);
+      }
   };
 
   const handleSubmitSingle = (e: React.FormEvent) => {
@@ -246,18 +305,41 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
                 />
               </div>
               
-              {/* Custo/L */}
+              {/* Custo/L com Sugestão */}
               <div className="space-y-2">
                 <Label htmlFor="costPerLiter" className="dark:text-gray-300">Custo/L (R$)</Label>
-                <Input
-                  id="costPerLiter"
-                  type="number"
-                  step="0.01"
-                  value={formData.costPerLiter}
-                  onChange={handleChange}
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                  required
-                />
+                <div className="flex items-center space-x-2">
+                    <Input
+                      id="costPerLiter"
+                      type="number"
+                      step="0.01"
+                      value={formData.costPerLiter}
+                      onChange={handleChange}
+                      className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                      required
+                    />
+                    {averagePrice !== null && averagePrice > 0 && !isEditing && (
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleApplySuggestedPrice}
+                            className="flex-shrink-0 text-xs h-10 dark:hover:bg-gray-700"
+                            disabled={isLoadingPrice}
+                        >
+                            {isLoadingPrice ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                `Sugestão: R$ ${averagePrice.toFixed(2)}`
+                            )}
+                        </Button>
+                    )}
+                </div>
+                {isPriceSuggested && (
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                        Preço sugerido aplicado.
+                    </p>
+                )}
               </div>
               
               {/* Custo Total */}
@@ -274,7 +356,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
                 />
               </div>
               
-              {/* Posto (Substituído pelo Combobox) */}
+              {/* Posto (Combobox) */}
               <div className="space-y-2">
                 <Label htmlFor="station" className="dark:text-gray-300">Posto</Label>
                 <GasStationCombobox 

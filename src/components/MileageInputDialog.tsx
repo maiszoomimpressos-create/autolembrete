@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { showError, showSuccess } from '@/utils/toast';
 import { useVehicle } from '@/hooks/useVehicle';
 import { FuelingRecord } from '@/types/fueling';
+import GasStationCombobox from './GasStationCombobox'; // Importando o Combobox
+import { useAveragePriceQuery } from '@/hooks/useAveragePrice'; // Importando o hook de preço médio
 
 interface MileageInputDialogProps {
   isOpen: boolean;
@@ -35,13 +37,34 @@ const MileageInputDialog: React.FC<MileageInputDialogProps> = ({ isOpen, onOpenC
   const [totalCost, setTotalCost] = useState<number>(0);
   const [fuelType, setFuelType] = useState<FuelingRecord['fuelType']>(FUEL_TYPES[0]);
   const [station, setStation] = useState<string>('');
+  const [isPriceSuggested, setIsPriceSuggested] = useState(false);
+
+  // Hook para buscar o preço médio
+  const { data: averagePrice, isLoading: isLoadingPrice } = useAveragePriceQuery(
+    { 
+        fuelType, 
+        stationName: station 
+    }, 
+    isOpen && isFuelingEnabled // Habilita a query apenas quando o modal está aberto e o abastecimento está ativo
+  );
+  
+  // Efeito para aplicar o preço sugerido
+  React.useEffect(() => {
+      if (averagePrice !== null && averagePrice > 0 && isFuelingEnabled && !isPriceSuggested) {
+          setCostPerLiter(averagePrice);
+          // Recalcula o custo total se litros já estiver preenchido
+          setTotalCost(parseFloat((volumeLiters * averagePrice).toFixed(2)));
+          setIsPriceSuggested(true);
+      }
+  }, [averagePrice, isFuelingEnabled, isPriceSuggested, volumeLiters]);
+
 
   // Atualiza o estado local do KM quando o KM atual muda (após o carregamento inicial ou mutação)
   React.useEffect(() => {
     setNewMileage(currentMileage);
   }, [currentMileage]);
   
-  // Lógica de cálculo de custo
+  // Lógica de cálculo de custo bidirecional
   React.useEffect(() => {
     if (isFuelingEnabled) {
         // Recalcula Custo Total se Litros ou Custo/L mudar
@@ -55,12 +78,49 @@ const MileageInputDialog: React.FC<MileageInputDialogProps> = ({ isOpen, onOpenC
   const handleTotalCostChange = (value: string) => {
     const total = parseFloat(value) || 0;
     setTotalCost(total);
+    setIsPriceSuggested(false);
     
     // Recalcula Custo/L se Litros > 0
     if (volumeLiters > 0) {
         const calculatedCostPerLiter = parseFloat((total / volumeLiters).toFixed(2));
         setCostPerLiter(calculatedCostPerLiter);
     }
+  };
+  
+  const handleVolumeLitersChange = (value: string) => {
+      const liters = parseFloat(value) || 0;
+      setVolumeLiters(liters);
+      setIsPriceSuggested(false);
+      
+      // Recalcula Custo Total
+      setTotalCost(parseFloat((liters * costPerLiter).toFixed(2)));
+  };
+  
+  const handleCostPerLiterChange = (value: string) => {
+      const cost = parseFloat(value) || 0;
+      setCostPerLiter(cost);
+      setIsPriceSuggested(false);
+      
+      // Recalcula Custo Total
+      setTotalCost(parseFloat((volumeLiters * cost).toFixed(2)));
+  };
+  
+  const handleFuelTypeChange = (value: string) => {
+      setFuelType(value as FuelingRecord['fuelType']);
+      setIsPriceSuggested(false); // Resetar sugestão ao mudar o tipo
+  };
+  
+  const handleStationSelect = (stationName: string) => {
+      setStation(stationName);
+      setIsPriceSuggested(false); // Resetar sugestão ao mudar o posto
+  };
+  
+  const handleApplySuggestedPrice = () => {
+      if (averagePrice !== null && averagePrice > 0) {
+          setCostPerLiter(averagePrice);
+          setTotalCost(parseFloat((volumeLiters * averagePrice).toFixed(2)));
+          setIsPriceSuggested(true);
+      }
   };
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -214,7 +274,10 @@ const MileageInputDialog: React.FC<MileageInputDialogProps> = ({ isOpen, onOpenC
               <Switch
                 id="fueling-switch"
                 checked={isFuelingEnabled}
-                onCheckedChange={setIsFuelingEnabled}
+                onCheckedChange={(checked) => {
+                    setIsFuelingEnabled(checked);
+                    setIsPriceSuggested(false); // Resetar sugestão ao desativar/ativar
+                }}
                 disabled={isMutating || activeVehicle.id === ''}
               />
             </div>
@@ -228,7 +291,7 @@ const MileageInputDialog: React.FC<MileageInputDialogProps> = ({ isOpen, onOpenC
                       <Label htmlFor="fuelType" className="dark:text-gray-300">Tipo de Combustível</Label>
                       <Select
                         value={fuelType}
-                        onValueChange={(value) => setFuelType(value as FuelingRecord['fuelType'])}
+                        onValueChange={handleFuelTypeChange}
                       >
                         <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                           <SelectValue placeholder="Selecione o tipo" />
@@ -241,6 +304,15 @@ const MileageInputDialog: React.FC<MileageInputDialogProps> = ({ isOpen, onOpenC
                       </Select>
                   </div>
                   
+                  {/* Posto (Combobox) */}
+                  <div className="space-y-2">
+                    <Label htmlFor="station" className="dark:text-gray-300">Posto</Label>
+                    <GasStationCombobox 
+                        selectedStationName={station}
+                        onStationSelect={handleStationSelect}
+                    />
+                  </div>
+                  
                   <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="volumeLiters" className="dark:text-gray-300">Litros</Label>
@@ -249,22 +321,45 @@ const MileageInputDialog: React.FC<MileageInputDialogProps> = ({ isOpen, onOpenC
                           type="number"
                           step="0.01"
                           value={volumeLiters}
-                          onChange={(e) => setVolumeLiters(parseFloat(e.target.value) || 0)}
+                          onChange={(e) => handleVolumeLitersChange(e.target.value)}
                           className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                           required={isFuelingEnabled}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="costPerLiter" className="dark:text-gray-300">Custo/L (R$)</Label>
-                        <Input
-                          id="costPerLiter"
-                          type="number"
-                          step="0.01"
-                          value={costPerLiter}
-                          onChange={(e) => setCostPerLiter(parseFloat(e.target.value) || 0)}
-                          className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                          required={isFuelingEnabled}
-                        />
+                        <div className="flex items-center space-x-2">
+                            <Input
+                              id="costPerLiter"
+                              type="number"
+                              step="0.01"
+                              value={costPerLiter}
+                              onChange={(e) => handleCostPerLiterChange(e.target.value)}
+                              className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                              required={isFuelingEnabled}
+                            />
+                            {averagePrice !== null && averagePrice > 0 && (
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={handleApplySuggestedPrice}
+                                    className="flex-shrink-0 text-xs h-10 dark:hover:bg-gray-700"
+                                    disabled={isLoadingPrice}
+                                >
+                                    {isLoadingPrice ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        `Sugestão: R$ ${averagePrice.toFixed(2)}`
+                                    )}
+                                </Button>
+                            )}
+                        </div>
+                        {isPriceSuggested && (
+                            <p className="text-xs text-green-600 dark:text-green-400">
+                                Preço sugerido aplicado.
+                            </p>
+                        )}
                       </div>
                   </div>
                   
@@ -278,18 +373,6 @@ const MileageInputDialog: React.FC<MileageInputDialogProps> = ({ isOpen, onOpenC
                         onChange={(e) => handleTotalCostChange(e.target.value)}
                         className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                         required={isFuelingEnabled}
-                      />
-                  </div>
-                  
-                  <div className="space-y-2">
-                      <Label htmlFor="station" className="dark:text-gray-300">Posto (Opcional)</Label>
-                      <Input
-                        id="station"
-                        type="text"
-                        value={station}
-                        onChange={(e) => setStation(e.target.value)}
-                        placeholder="Nome do posto"
-                        className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                       />
                   </div>
               </div>
