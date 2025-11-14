@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Map, Fuel, Loader2, LocateFixed, TrendingDown, TrendingUp, DollarSign, Check } from 'lucide-react';
+import { Map, Fuel, Loader2, LocateFixed, TrendingDown, TrendingUp, DollarSign, Check, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,7 +8,7 @@ import { showError } from '@/utils/toast';
 import { useNearbyStationsQuery, NearbyStation } from '@/hooks/useNearbyStations';
 import { FuelingRecord } from '@/types/fueling';
 import { Badge } from '@/components/ui/badge';
-import NearbyStationsMap from '@/components/NearbyStationsMap'; // Importação do mapa
+import NearbyStationsMap from '@/components/NearbyStationsMap';
 import { cn } from '@/lib/utils';
 
 // Tipos de combustível disponíveis
@@ -19,7 +19,7 @@ const PriceComparisonPage: React.FC = () => {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [errorLocation, setErrorLocation] = useState<string | null>(null);
   const [selectedFuelType, setSelectedFuelType] = useState<FuelingRecord['fuelType']>(FUEL_TYPES[0]);
-  const [selectedStationId, setSelectedStationId] = useState<string | null>(null); // Novo estado
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
 
   const getUserLocation = () => {
     if (!navigator.geolocation) {
@@ -40,9 +40,14 @@ const PriceComparisonPage: React.FC = () => {
       },
       (err) => {
         console.error(err);
-        setErrorLocation('Permissão de localização negada ou erro ao obter a localização.');
+        // Mensagem de erro mais amigável
+        const errorMessage = err.code === 1 
+            ? 'Permissão de localização negada. Por favor, habilite nas configurações do navegador.'
+            : 'Erro ao obter a localização. Tente novamente.';
+            
+        setErrorLocation(errorMessage);
         setIsLoadingLocation(false);
-        showError('Não foi possível obter sua localização. Verifique as permissões do navegador.');
+        showError(errorMessage);
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
@@ -50,7 +55,9 @@ const PriceComparisonPage: React.FC = () => {
 
   useEffect(() => {
     // Tenta obter a localização ao carregar a página
-    getUserLocation();
+    if (!userLocation && !isLoadingLocation) {
+        getUserLocation();
+    }
   }, []);
   
   // Hook para buscar postos próximos
@@ -60,7 +67,7 @@ const PriceComparisonPage: React.FC = () => {
       userLng: userLocation?.lng || 0,
       fuelType: selectedFuelType,
     },
-    !!userLocation && !!selectedFuelType // Habilita a query apenas se tiver localização e tipo de combustível
+    !!userLocation && !!selectedFuelType
   );
   
   // Calcula o preço mais baixo e mais alto entre os postos encontrados
@@ -91,7 +98,7 @@ const PriceComparisonPage: React.FC = () => {
         <div className="text-center py-12 text-gray-500 dark:text-gray-400 border border-dashed rounded-lg dark:border-gray-700">
           <LocateFixed className="w-12 h-12 mx-auto mb-4" />
           <p className="text-lg font-semibold">Aguardando sua localização...</p>
-          <p className="text-sm mt-2">Permita o acesso à geolocalização para ver os postos próximos.</p>
+          <p className="text-sm mt-2">Clique em "Obter Minha Localização" para começar.</p>
         </div>
       );
     }
@@ -246,7 +253,10 @@ const PriceComparisonPage: React.FC = () => {
                     {userLocation ? 'Localização Obtida' : 'Obter Minha Localização'}
                 </Button>
                 {errorLocation && (
-                    <p className="text-xs text-red-500">{errorLocation}</p>
+                    <div className="flex items-center text-xs text-red-500 mt-1">
+                        <XCircle className="w-3 h-3 mr-1" />
+                        {errorLocation}
+                    </div>
                 )}
             </div>
         </CardContent>
