@@ -18,6 +18,11 @@ interface MaintenanceFormDialogProps {
   currentMileage: number; // Novo prop
 }
 
+// Tipo auxiliar para o estado do formulário, incluindo o intervalo
+interface FormDataState extends Omit<MaintenanceRecord, 'id' | 'nextMileage'> {
+    nextMileageInterval?: number;
+}
+
 const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   isOpen,
   onOpenChange,
@@ -28,8 +33,8 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   const isEditing = !!recordToEdit;
   const title = isEditing ? 'Editar Manutenção' : 'Adicionar Nova Manutenção';
 
-  // Simulação de estado do formulário
-  const [formData, setFormData] = React.useState<Omit<MaintenanceRecord, 'id'>>({
+  // Inicializa o estado do formulário
+  const [formData, setFormData] = React.useState<FormDataState>({
     date: recordToEdit?.date || new Date().toISOString().split('T')[0],
     mileage: recordToEdit?.mileage || 0,
     type: recordToEdit?.type || 'Troca de Óleo',
@@ -37,7 +42,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     description: recordToEdit?.description || '',
     cost: recordToEdit?.cost || 0,
     status: recordToEdit?.status || 'Concluído',
-    nextMileage: recordToEdit?.nextMileage || undefined,
+    nextMileageInterval: recordToEdit?.nextMileageInterval || undefined, // Usando o novo campo
     nextDate: recordToEdit?.nextDate || undefined,
   });
 
@@ -51,7 +56,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         description: recordToEdit.description,
         cost: recordToEdit.cost,
         status: recordToEdit.status,
-        nextMileage: recordToEdit.nextMileage || undefined,
+        nextMileageInterval: recordToEdit.nextMileageInterval || undefined,
         nextDate: recordToEdit.nextDate || undefined,
       });
     } else {
@@ -63,7 +68,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         description: '',
         cost: 0,
         status: 'Concluído',
-        nextMileage: undefined,
+        nextMileageInterval: undefined,
         nextDate: undefined,
       });
     }
@@ -71,15 +76,19 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
+    
+    let parsedValue: string | number = value;
+    if (id === 'mileage' || id === 'cost' || id === 'nextMileageInterval') {
+        parsedValue = parseFloat(value) || 0;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [id]: (id === 'mileage' || id === 'cost' || id === 'nextMileage') 
-            ? (parseFloat(value) || 0) 
-            : value,
+      [id]: parsedValue,
     }));
   };
 
-  const handleSelectChange = (id: keyof typeof formData, value: string) => {
+  const handleSelectChange = (id: keyof FormDataState, value: string) => {
     setFormData(prev => ({
       ...prev,
       [id]: value,
@@ -91,25 +100,32 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação para o campo 'Outro'
+    // 1. Validação para o campo 'Outro'
     if (formData.type === 'Outro' && !formData.customType?.trim()) {
         showError('Por favor, especifique o nome da manutenção personalizada.');
         return;
     }
     
-    // Validação de KM de alerta
-    if (formData.nextMileage && formData.nextMileage <= formData.mileage) {
-        showError('O KM de Alerta deve ser maior que o KM da manutenção atual.');
-        return;
+    // 2. Cálculo do nextMileage final
+    let finalNextMileage: number | undefined = undefined;
+    if (formData.nextMileageInterval && formData.nextMileageInterval > 0) {
+        finalNextMileage = formData.mileage + formData.nextMileageInterval;
     }
     
-    // Validação de Data de Alerta
+    // 3. Validação de Data de Alerta
     if (formData.nextDate && new Date(formData.nextDate) <= new Date(formData.date)) {
         showError('A Data de Alerta deve ser posterior à data da manutenção atual.');
         return;
     }
+    
+    // 4. Preparar dados para submissão (incluindo o KM alvo calculado)
+    const dataToSubmit: Omit<MaintenanceRecord, 'id'> = {
+        ...formData,
+        nextMileage: finalNextMileage, // KM alvo calculado
+        nextMileageInterval: formData.nextMileageInterval, // Mantém o intervalo para referência
+    };
 
-    onSubmit(formData);
+    onSubmit(dataToSubmit);
     onOpenChange(false);
   };
 
@@ -251,24 +267,30 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
                     <span>Alerta de Próxima Manutenção (Opcional)</span>
                 </CardTitle>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Defina o KM e/ou a Data para ser lembrado da próxima ocorrência deste serviço.
+                    Defina o intervalo de KM e/ou a Data para ser lembrado da próxima ocorrência deste serviço.
                 </p>
             </CardHeader>
             <CardContent className="p-4 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* KM de Alerta */}
+                {/* KM de Alerta (Intervalo) */}
                 <div className="space-y-2">
-                    <Label htmlFor="nextMileage" className="dark:text-gray-300 flex items-center">
+                    <Label htmlFor="nextMileageInterval" className="dark:text-gray-300 flex items-center">
                         <Gauge className="w-4 h-4 mr-1 text-blue-500" />
-                        KM de Alerta
+                        Intervalo de KM (Ex: 10000)
                     </Label>
                     <Input
-                        id="nextMileage"
+                        id="nextMileageInterval"
                         type="number"
-                        value={formData.nextMileage || ''}
+                        value={formData.nextMileageInterval || ''}
                         onChange={handleChange}
-                        placeholder="Ex: 55000 km"
+                        placeholder="Ex: 10000 km"
                         className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        min={0}
                     />
+                    {formData.nextMileageInterval && formData.mileage > 0 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            KM Alvo: {(formData.mileage + formData.nextMileageInterval).toLocaleString('pt-BR')} km
+                        </p>
+                    )}
                 </div>
                 
                 {/* Data de Alerta */}
