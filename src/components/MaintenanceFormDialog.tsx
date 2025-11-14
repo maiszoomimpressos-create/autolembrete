@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MaintenanceRecord } from '@/types/maintenance';
-import { Wrench, AlertTriangle } from 'lucide-react';
+import { Wrench, AlertTriangle, Clock, Gauge } from 'lucide-react';
 import { showError } from '@/utils/toast';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface MaintenanceFormDialogProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     cost: recordToEdit?.cost || 0,
     status: recordToEdit?.status || 'Concluído',
     nextMileage: recordToEdit?.nextMileage || undefined,
-    nextDate: recordToEdit?.nextDate || undefined, // Adicionado
+    nextDate: recordToEdit?.nextDate || undefined,
   });
 
   React.useEffect(() => {
@@ -51,7 +52,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         cost: recordToEdit.cost,
         status: recordToEdit.status,
         nextMileage: recordToEdit.nextMileage || undefined,
-        nextDate: recordToEdit.nextDate || undefined, // Adicionado
+        nextDate: recordToEdit.nextDate || undefined,
       });
     } else {
       setFormData({
@@ -63,7 +64,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         cost: 0,
         status: 'Concluído',
         nextMileage: undefined,
-        nextDate: undefined, // Adicionado
+        nextDate: undefined,
       });
     }
   }, [recordToEdit, isOpen, currentMileage]);
@@ -121,7 +122,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] dark:bg-gray-900 dark:text-white">
+      <DialogContent className="sm:max-w-[600px] dark:bg-gray-900 dark:text-white">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Wrench className="w-5 h-5 text-blue-500" />
@@ -132,32 +133,106 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="date" className="text-right dark:text-gray-300">Data</Label>
-            <Input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={handleChange}
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="mileage" className="text-right dark:text-gray-300">KM</Label>
-            <Input
-              id="mileage"
-              type="number"
-              value={formData.mileage}
-              onChange={handleChange}
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              required
-            />
+          
+          {/* Seção de Detalhes Principais */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            {/* Data */}
+            <div className="space-y-2">
+              <Label htmlFor="date" className="dark:text-gray-300">Data da Manutenção</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={handleChange}
+                className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                required
+              />
+            </div>
+            
+            {/* KM */}
+            <div className="space-y-2">
+              <Label htmlFor="mileage" className="dark:text-gray-300">Quilometragem (KM)</Label>
+              <Input
+                id="mileage"
+                type="number"
+                value={formData.mileage}
+                onChange={handleChange}
+                className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                required
+              />
+            </div>
+            
+            {/* Tipo */}
+            <div className="space-y-2">
+              <Label htmlFor="type" className="dark:text-gray-300">Tipo de Serviço</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value) => handleSelectChange('type', value as MaintenanceRecord['type'])}
+              >
+                <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                  {['Troca de Óleo', 'Revisão Geral', 'Pneus', 'Freios', 'Outro'].map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Custo */}
+            <div className="space-y-2">
+              <Label htmlFor="cost" className="dark:text-gray-300">Custo (R$)</Label>
+              <Input
+                id="cost"
+                type="number"
+                step="0.01"
+                value={formData.cost}
+                onChange={handleChange}
+                className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                required
+              />
+            </div>
+            
+            {/* Status */}
+            <div className="space-y-2">
+              <Label htmlFor="status" className="dark:text-gray-300">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => handleSelectChange('status', value as MaintenanceRecord['status'])}
+              >
+                <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                  {['Concluído', 'Pendente', 'Agendado'].map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Campo de Nome Personalizado (aparece se Tipo for 'Outro') */}
+            {isCustomType && (
+              <div className="space-y-2">
+                <Label htmlFor="customType" className="dark:text-gray-300">Nome Personalizado</Label>
+                <Input
+                  id="customType"
+                  type="text"
+                  value={formData.customType}
+                  onChange={handleChange}
+                  placeholder="Ex: Troca de Bateria"
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+            )}
           </div>
           
           {/* Alerta de KM */}
           {isMileageHigherThanCurrent && currentMileage > 0 && (
-            <div className="col-span-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg text-sm text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300">
+            <div className="p-3 bg-yellow-100 border border-yellow-300 rounded-lg text-sm text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300">
               <div className="flex items-start space-x-2">
                 <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <div>
@@ -168,108 +243,64 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="type" className="text-right dark:text-gray-300">Tipo</Label>
-            <Select
-              value={formData.type}
-              onValueChange={(value) => handleSelectChange('type', value as MaintenanceRecord['type'])}
-            >
-              <SelectTrigger className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                {['Troca de Óleo', 'Revisão Geral', 'Pneus', 'Freios', 'Outro'].map(type => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Campo de Nome Personalizado (aparece se Tipo for 'Outro') */}
-          {isCustomType && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customType" className="text-right dark:text-gray-300">Nome</Label>
-              <Input
-                id="customType"
-                type="text"
-                value={formData.customType}
-                onChange={handleChange}
-                placeholder="Ex: Troca de Bateria"
-                className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                required
-              />
-            </div>
-          )}
+          {/* Seção de Alertas de Repetição */}
+          <Card className="dark:bg-gray-800 dark:border-gray-700 mt-4">
+            <CardHeader className="p-4 pb-2">
+                <CardTitle className="text-base font-semibold flex items-center space-x-2 dark:text-white">
+                    <Clock className="w-4 h-4 text-yellow-500" />
+                    <span>Alerta de Próxima Manutenção (Opcional)</span>
+                </CardTitle>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Defina o KM e/ou a Data para ser lembrado da próxima ocorrência deste serviço.
+                </p>
+            </CardHeader>
+            <CardContent className="p-4 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* KM de Alerta */}
+                <div className="space-y-2">
+                    <Label htmlFor="nextMileage" className="dark:text-gray-300 flex items-center">
+                        <Gauge className="w-4 h-4 mr-1 text-blue-500" />
+                        KM de Alerta
+                    </Label>
+                    <Input
+                        id="nextMileage"
+                        type="number"
+                        value={formData.nextMileage || ''}
+                        onChange={handleChange}
+                        placeholder="Ex: 55000 km"
+                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                </div>
+                
+                {/* Data de Alerta */}
+                <div className="space-y-2">
+                    <Label htmlFor="nextDate" className="dark:text-gray-300 flex items-center">
+                        <Clock className="w-4 h-4 mr-1 text-yellow-500" />
+                        Data de Alerta
+                    </Label>
+                    <Input
+                        id="nextDate"
+                        type="date"
+                        value={formData.nextDate || ''}
+                        onChange={handleChange}
+                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                </div>
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="cost" className="text-right dark:text-gray-300">Custo (R$)</Label>
-            <Input
-              id="cost"
-              type="number"
-              step="0.01"
-              value={formData.cost}
-              onChange={handleChange}
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="status" className="text-right dark:text-gray-300">Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) => handleSelectChange('status', value as MaintenanceRecord['status'])}
-            >
-              <SelectTrigger className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
-                <SelectValue placeholder="Selecione o status" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                {['Concluído', 'Pendente', 'Agendado'].map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Campo de KM de Alerta */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="nextMileage" className="text-right dark:text-gray-300">KM de Alerta</Label>
-            <Input
-              id="nextMileage"
-              type="number"
-              value={formData.nextMileage || ''}
-              onChange={handleChange}
-              placeholder="Ex: 55000"
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            />
-          </div>
-          
-          {/* Campo de Data de Alerta (Novo) */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="nextDate" className="text-right dark:text-gray-300">Data de Alerta</Label>
-            <Input
-              id="nextDate"
-              type="date"
-              value={formData.nextDate || ''}
-              onChange={handleChange}
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            />
-          </div>
-          
-          <p className="col-span-4 text-xs text-gray-500 dark:text-gray-400 -mt-2">
-            Opcional. Defina o KM e/ou a Data para ser alertado sobre a próxima ocorrência desta manutenção.
-          </p>
-
+          {/* Descrição */}
           <div className="grid gap-2">
-            <Label htmlFor="description" className="dark:text-gray-300">Descrição</Label>
+            <Label htmlFor="description" className="dark:text-gray-300">Descrição Detalhada</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Detalhes da manutenção..."
-              className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+              placeholder="Detalhes da manutenção, peças trocadas, local..."
+              className="dark:bg-gray-800 dark:border-gray-700 dark:text-white min-h-[100px]"
             />
           </div>
-          <Button type="submit" className="mt-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
+          
+          <Button type="submit" className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
             {isEditing ? 'Salvar Alterações' : 'Adicionar Manutenção'}
           </Button>
         </form>
