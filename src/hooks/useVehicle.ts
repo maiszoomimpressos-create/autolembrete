@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
-import { useVehicleQuery, useVehicleMutations } from '@/integrations/supabase/vehicle';
+import { useVehicleMutations } from '@/integrations/supabase/vehicle';
 import { showError } from '@/utils/toast';
+import { useActiveVehicle } from './useActiveVehicle'; // Novo Import
 
 export interface VehicleData {
   id: string;
@@ -18,41 +19,48 @@ const defaultVehicleData: VehicleData = {
 };
 
 export const useVehicle = () => {
-  const { data: vehicleData, isLoading } = useVehicleQuery();
+  const { vehicles, activeVehicle, isLoadingVehicles } = useActiveVehicle();
   const { upsertVehicle, deleteVehicle, isMutating } = useVehicleMutations();
 
   // Combina os dados do Supabase com os valores padrão se não houver registro
   const vehicle = useMemo(() => {
-    if (vehicleData) {
-        return vehicleData;
+    if (activeVehicle) {
+        return activeVehicle;
     }
     return defaultVehicleData;
-  }, [vehicleData]);
+  }, [activeVehicle]);
+
+  const isLoading = isLoadingVehicles;
 
   const updateVehicle = useCallback(async (data: Omit<VehicleData, 'id'>) => {
     try {
         // Se o veículo já existe, passamos o ID para a mutação
-        const vehicleId = vehicleData?.id;
+        const vehicleId = activeVehicle?.id;
         await upsertVehicle({ ...data, vehicleId });
     } catch (e) {
         // Erro já tratado na mutação
     }
-  }, [upsertVehicle, vehicleData]);
+  }, [upsertVehicle, activeVehicle]);
 
   const removeVehicle = useCallback(async () => {
-    if (!vehicleData?.id) {
+    if (!activeVehicle?.id) {
         showError("Nenhum veículo para remover.");
         return;
     }
+    if (vehicles.length > 1) {
+        showError("Você deve ter pelo menos um veículo ativo. Por favor, adicione outro veículo antes de remover este.");
+        return;
+    }
     try {
-        await deleteVehicle(vehicleData.id);
+        await deleteVehicle(activeVehicle.id);
     } catch (e) {
         // Erro já tratado na mutação
     }
-  }, [deleteVehicle, vehicleData]);
+  }, [deleteVehicle, activeVehicle, vehicles.length]);
 
   return {
     vehicle,
+    vehicles, // Retorna a lista completa
     isLoading,
     isMutating,
     updateVehicle,
