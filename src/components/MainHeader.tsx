@@ -140,7 +140,7 @@ const MainHeader: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
             <Car className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">CarManager</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Autolembrete</h1>
           </div>
           <nav className="hidden md:flex space-x-2 lg:space-x-8">
             {navItems.map((item) => {

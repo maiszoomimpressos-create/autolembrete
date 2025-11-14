@@ -37,7 +37,7 @@ const IndexPage: React.FC = () => {
         <div className="text-center space-y-6 mb-8">
           <div className="flex items-center justify-center space-x-3">
             <Car className="w-10 h-10 text-blue-400 drop-shadow-lg" />
-            <h1 className="text-4xl font-bold text-white drop-shadow-lg">CarManager</h1>
+            <h1 className="text-4xl font-bold text-white drop-shadow-lg">Autolembrete</h1>
           </div>
           <p className="text-lg text-white drop-shadow-lg">
             Gerencie a manutenção do seu veículo de forma inteligente e eficiente
