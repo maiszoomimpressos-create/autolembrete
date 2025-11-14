@@ -3,7 +3,6 @@ import MetricCard from '@/components/MetricCard';
 import VehicleSummary from '@/components/VehicleSummary';
 import MonthlySpendingChart from '@/components/MonthlySpendingChart';
 import FuelEfficiencyChart from '@/components/FuelEfficiencyChart';
-import MileageInputForm from '@/components/MileageInputForm';
 import { DollarSign, Clock, TrendingUp, AlertTriangle, Gauge, Calendar, ChevronRight, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFuelingMetrics } from '@/hooks/useFuelingMetrics';
@@ -28,7 +27,7 @@ const DashboardPage: React.FC = () => {
   const { averageEfficiency } = useFuelingMetrics(fuelingRecords);
 
   // Dados de KM (Combina abastecimentos e entradas manuais)
-  const { currentMileage, addManualRecord, isLoading: isLoadingMileage } = useMileageRecords(fuelingRecords);
+  const { currentMileage, isLoading: isLoadingMileage } = useMileageRecords(fuelingRecords);
 
   // Dados de Manutenção
   const { records: maintenanceRecords, isLoading: isLoadingMaintenance } = useMaintenanceRecords();
@@ -70,13 +69,6 @@ const DashboardPage: React.FC = () => {
     ? 'Baseado nos últimos abastecimentos'
     : 'Adicione mais abastecimentos para calcular';
 
-  const nextMaintenanceValue = nextMaintenance 
-    ? `${nextMaintenance.mileage.toLocaleString('pt-BR')} km`
-    : 'Nenhuma agendada';
-    
-  const nextMaintenanceDescription = nextMaintenance
-    ? `${nextMaintenance.type} em ${new Date(nextMaintenance.date).toLocaleDateString('pt-BR')}`
-    : 'Adicione um agendamento';
     
   const handleEditMaintenance = (record: MaintenanceRecord) => {
     // Navega para a página de manutenção e abre o modal de edição
@@ -147,16 +139,11 @@ const DashboardPage: React.FC = () => {
         />
       </div>
 
-      {/* Seção de Gráficos e Input de KM */}
+      {/* Seção de Gráficos e Alertas (Agora 2 colunas em desktop) */}
       <div className="grid gap-4 lg:grid-cols-3">
         
-        {/* Coluna de Input de KM e Alertas */}
+        {/* Coluna de Alertas (Agora ocupa 1 coluna) */}
         <div className="lg:col-span-1 space-y-4">
-            <MileageInputForm 
-                currentMileage={currentMileage} 
-                onSubmit={addManualRecord} 
-            />
-            
             <Card className="bg-white p-6 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
               <CardHeader className="p-0 mb-4">
                 <CardTitle className="text-xl font-semibold dark:text-white">Alertas de Repetição</CardTitle>
@@ -181,7 +168,7 @@ const DashboardPage: React.FC = () => {
                 
                 {/* Placeholder de sucesso */}
                 {pendingCount === 0 && allRepetitionAlerts.length === 0 && (
-                  <div className="flex items-center text-green-500 p-3 border border-green-200 bg-green-50/50 rounded-lg dark:bg-green-900/10 dark:border-green-900">
+                  <div className="flex items-center text-green-500 p-3 border border-green-200 bg-green-50/50 dark:bg-green-900/10 dark:border-green-900 rounded-lg">
                     <TrendingUp className="w-4 h-4 mr-2" />
                     Nenhum alerta de repetição ativo.
                   </div>
@@ -190,7 +177,7 @@ const DashboardPage: React.FC = () => {
             </Card>
         </div>
         
-        {/* Coluna de Gráficos */}
+        {/* Coluna de Gráficos (Agora ocupa 2 colunas) */}
         <div className="lg:col-span-2 grid gap-4 md:grid-cols-2">
           <MonthlySpendingChart />
           <FuelEfficiencyChart fuelingRecords={fuelingRecords} />
