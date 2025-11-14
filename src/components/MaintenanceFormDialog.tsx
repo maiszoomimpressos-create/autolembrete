@@ -87,12 +87,16 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         // Modo Criação a partir de Alerta de Repetição
         const isKmAlert = alertToCreateFrom.unit === 'km';
         
-        // O tipo do alerta pode ser um tipo personalizado, então usamos ele
         const alertType = alertToCreateFrom.type;
         
+        // Se o tipo do alerta for um tipo personalizado, ele deve ser tratado como tal.
+        // Se o tipo do alerta for 'Outro', o customType deve ser o nome do alerta.
+        const isAlertCustom = !allServiceTypes.includes(alertType as MaintenanceRecord['type']);
+        
         setFormData({
-            ...getInitialFormData(alertType, alertType), // Passamos o tipo do alerta como customType também, para garantir que seja exibido se for um tipo não padrão.
-            type: alertType as FormDataState['type'],
+            ...getInitialFormData(alertType, isAlertCustom ? alertType : ''),
+            type: isAlertCustom ? 'Outro' : alertType as FormDataState['type'],
+            customType: isAlertCustom ? alertType : '',
             mileage: currentMileage,
             description: `Registro de manutenção acionado pelo alerta de repetição: ${alertType}.`,
             status: 'Concluído', 
@@ -104,7 +108,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
       // Modo Criação Padrão
       setFormData(getInitialFormData(defaultType));
     }
-  }, [recordToEdit, isOpen, currentMileage, activeVehicle.id, alertToCreateFrom, defaultType, getInitialFormData]);
+  }, [recordToEdit, isOpen, currentMileage, activeVehicle.id, alertToCreateFrom, defaultType, getInitialFormData, allServiceTypes]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
