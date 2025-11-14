@@ -10,7 +10,7 @@ import { Wrench, AlertTriangle, Clock, Gauge, Loader2 } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MaintenanceAlert } from '@/types/alert';
-import { useServiceTypes } from '@/hooks/useServiceTypes'; // Novo Import
+import { useServiceTypes } from '@/hooks/useServiceTypes';
 
 interface MaintenanceFormDialogProps {
   isOpen: boolean;
@@ -34,7 +34,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   onSubmit,
   currentMileage,
 }) => {
-  const { allServiceTypes, isLoading: isLoadingServiceTypes } = useServiceTypes(); // Usando o novo hook
+  const { allServiceTypes, isLoading: isLoadingServiceTypes } = useServiceTypes();
   
   const isEditing = !!recordToEdit;
   const isCreatingFromAlert = !!alertToCreateFrom;
@@ -49,7 +49,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   const initialFormData: FormDataState = {
     date: new Date().toISOString().split('T')[0],
     mileage: currentMileage,
-    type: initialType as MaintenanceRecord['type'], // Usa o tipo inicial determinado
+    type: initialType, // Agora é string
     customType: '',
     description: '',
     cost: 0,
@@ -76,10 +76,9 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
       });
     } else if (alertToCreateFrom) {
         // Modo Criação a partir de Alerta (Pré-preenchimento)
-        const typeFromAlert = alertToCreateFrom.type as MaintenanceRecord['type'];
+        const typeFromAlert = alertToCreateFrom.type;
         
-        // Verifica se o tipo do alerta é um dos tipos padrão ou um tipo personalizado
-        // Como removemos os tipos padrão, verificamos se o tipo do alerta existe na lista atual
+        // Verifica se o tipo do alerta existe na lista atual (tipos personalizados)
         const isCustomType = !allServiceTypes.includes(typeFromAlert);
         
         setFormData({
@@ -105,10 +104,10 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         
       setFormData({
         ...initialFormData,
-        type: currentInitialType as MaintenanceRecord['type'],
+        type: currentInitialType,
       });
     }
-  }, [recordToEdit, alertToCreateFrom, isOpen, currentMileage, allServiceTypes]); // Adicionado allServiceTypes como dependência
+  }, [recordToEdit, alertToCreateFrom, isOpen, currentMileage, allServiceTypes]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -127,7 +126,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   const handleSelectChange = (id: keyof FormDataState, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [id]: value as MaintenanceRecord['type'],
+      [id]: value, // Não precisa mais de cast, pois type é string
       // Limpa customType se o tipo não for 'Outro'
       customType: value !== 'Outro' ? '' : prev.customType,
     }));

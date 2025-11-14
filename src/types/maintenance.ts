@@ -2,7 +2,7 @@ export interface MaintenanceRecord {
   id: string;
   date: string;
   mileage: number;
-  type: 'Troca de Óleo' | 'Revisão Geral' | 'Pneus' | 'Freios' | 'Outro';
+  type: string; // Alterado para string para suportar tipos personalizados
   customType?: string;
   description: string;
   cost: number;
