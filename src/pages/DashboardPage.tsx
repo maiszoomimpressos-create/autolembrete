@@ -3,9 +3,20 @@ import MetricCard from '@/components/MetricCard';
 import VehicleSummary from '@/components/VehicleSummary';
 import MonthlySpendingChart from '@/components/MonthlySpendingChart';
 import { DollarSign, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Importando Card para a seção de Alertas
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useFuelingMetrics } from '@/hooks/useFuelingMetrics'; // Importando o hook
 
 const DashboardPage: React.FC = () => {
+  const { averageEfficiency } = useFuelingMetrics();
+
+  const efficiencyValue = averageEfficiency !== null 
+    ? `${averageEfficiency} km/l` 
+    : 'N/A';
+  
+  const efficiencyDescription = averageEfficiency !== null
+    ? 'Baseado nos últimos abastecimentos'
+    : 'Adicione mais abastecimentos para calcular';
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
@@ -38,8 +49,8 @@ const DashboardPage: React.FC = () => {
         />
         <MetricCard
           title="Eficiência Média"
-          value="12.5 km/l"
-          description="Baseado nos últimos 3 abastecimentos"
+          value={efficiencyValue}
+          description={efficiencyDescription}
           icon={TrendingUp}
           colorClass="text-blue-600 dark:text-blue-400"
         />
