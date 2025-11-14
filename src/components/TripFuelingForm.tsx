@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FuelingRecord } from '@/types/fueling';
 import { Plus, Trash2, Gauge, TrendingUp } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { useVehicle } from '@/hooks/useVehicle';
 
 // Tipo auxiliar para o estado do formulário de viagem
-interface TripRecord extends Omit<FuelingRecord, 'id'> {}
+interface TripRecord extends Omit<FuelingRecord, 'id' | 'vehicleId'> {}
 
 interface TripFuelingFormProps {
   onSubmit: (data: Omit<FuelingRecord, 'id'>) => void;
@@ -25,6 +26,7 @@ const calculateEfficiency = (distance: number, volume: number): number | null =>
 };
 
 const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel }) => {
+  const { vehicle: activeVehicle } = useVehicle(); // Obter veículo ativo
   const [initialMileage, setInitialMileage] = useState<number>(0); // KM Inicial da Viagem
   const [tripRecords, setTripRecords] = useState<TripRecord[]>([
     // Começa com um registro vazio
@@ -141,6 +143,11 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (activeVehicle.id === '') {
+        showError("Por favor, cadastre um veículo antes de registrar o abastecimento.");
+        return;
+    }
 
     // Validação de KM Inicial
     if (initialMileage <= 0) {
@@ -166,12 +173,25 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
 
     // Submete cada registro individualmente
     tripRecords.forEach(record => {
-      onSubmit(record);
+      onSubmit({
+          ...record,
+          vehicleId: activeVehicle.id, // Adiciona o ID do veículo
+      });
     });
 
     showSuccess(`Viagem registrada! ${tripRecords.length} abastecimentos adicionados. Eficiência média: ${tripMetrics.averageEfficiency} km/l.`);
     onCancel();
   };
+  
+  if (activeVehicle.id === '') {
+      return (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/10 dark:border-red-900">
+              <p className="text-sm text-red-600 dark:text-red-400">
+                  ⚠️ Nenhum veículo ativo encontrado. Por favor, cadastre um veículo em Configurações.
+              </p>
+          </div>
+      );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">

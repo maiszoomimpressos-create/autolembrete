@@ -7,6 +7,7 @@ export interface FuelingRecord {
   costPerLiter: number; // cost_per_liter
   totalCost: number; // total_cost
   station: string;
+  vehicleId?: string; // Adicionando vehicleId
 }
 
 // Tipo para inserção no Supabase (snake_case)
@@ -19,4 +20,5 @@ export interface FuelingRecordInsert {
   cost_per_liter: number;
   total_cost: number;
   station: string;
+  vehicle_id?: string; // Adicionando vehicle_id
 }

@@ -8,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FuelingRecord } from '@/types/fueling';
 import { Fuel, Car } from 'lucide-react';
 import TripFuelingForm from './TripFuelingForm';
+import { useVehicle } from '@/hooks/useVehicle';
+import { cn } from '@/lib/utils';
+import { showError } from '@/utils/toast';
 
 interface FuelingFormDialogProps {
   isOpen: boolean;
@@ -22,8 +25,10 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
   recordToEdit,
   onSubmit,
 }) => {
+  const { vehicle: activeVehicle, vehicles } = useVehicle();
   const isEditing = !!recordToEdit;
   const title = isEditing ? 'Editar Abastecimento' : 'Adicionar Novo Abastecimento';
+  const hasMultipleVehicles = vehicles.length > 1;
 
   const initialFormData: Omit<FuelingRecord, 'id'> = {
     date: new Date().toISOString().split('T')[0],
@@ -33,6 +38,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
     costPerLiter: 0,
     totalCost: 0,
     station: '',
+    vehicleId: activeVehicle.id,
   };
 
   const [formData, setFormData] = React.useState<Omit<FuelingRecord, 'id'>>(initialFormData);
@@ -48,12 +54,13 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
         costPerLiter: recordToEdit.costPerLiter,
         totalCost: recordToEdit.totalCost,
         station: recordToEdit.station,
+        vehicleId: recordToEdit.vehicleId,
       });
-      setActiveTab('single'); // Edição sempre no modo único
+      setActiveTab('single'); 
     } else {
-      setFormData(initialFormData);
+      setFormData({ ...initialFormData, vehicleId: activeVehicle.id });
     }
-  }, [recordToEdit, isOpen]);
+  }, [recordToEdit, isOpen, activeVehicle.id]);
 
   const calculateTotalCost = (liters: number, costPerL: number) => {
     return parseFloat((liters * costPerL).toFixed(2));
@@ -103,13 +110,18 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
 
   const handleSubmitSingle = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (activeVehicle.id === '') {
+        showError("Por favor, cadastre um veículo antes de registrar o abastecimento.");
+        return;
+    }
+    
     onSubmit(formData);
     onOpenChange(false);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      {/* Removendo sm:max-w-[480px] para permitir que o diálogo ocupe mais espaço em mobile, mas mantendo a rolagem */}
       <DialogContent className="w-full max-w-md dark:bg-gray-900 dark:text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
@@ -121,21 +133,43 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Exibição do Veículo Ativo */}
+        <div className={cn(
+            "flex items-center space-x-2 p-3 rounded-md border",
+            hasMultipleVehicles ? "bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700" : "bg-gray-50 dark:bg-gray-800 dark:border-gray-700"
+        )}>
+            <Car className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+            <span className="text-sm font-medium dark:text-white">
+                Veículo Ativo: {activeVehicle.id ? `${activeVehicle.model} (${activeVehicle.plate})` : 'Nenhum Veículo Cadastrado'}
+            </span>
+            {hasMultipleVehicles && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                    (Mude em Configurações &gt; Veículo)
+                </span>
+            )}
+        </div>
+        
+        {activeVehicle.id === '' && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 dark:bg-red-900/10 dark:border-red-900 dark:text-red-400">
+                ⚠️ Por favor, cadastre um veículo em Configurações antes de adicionar registros.
+            </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'single' | 'trip')} className="w-full">
           {!isEditing && (
             <TabsList className="grid w-full grid-cols-2 dark:bg-gray-800">
-              <TabsTrigger value="single" className="flex items-center space-x-2">
+              <TabsTrigger value="single" className="flex items-center space-x-2" disabled={activeVehicle.id === ''}>
                 <Fuel className="w-4 h-4" />
                 <span>Único</span>
               </TabsTrigger>
-              <TabsTrigger value="trip" className="flex items-center space-x-2">
+              <TabsTrigger value="trip" className="flex items-center space-x-2" disabled={activeVehicle.id === ''}>
                 <Car className="w-4 h-4" />
                 <span>Viagem</span>
               </TabsTrigger>
             </TabsList>
           )}
 
-          {/* Aba de Abastecimento Único (Formulário ajustado para mobile) */}
+          {/* Aba de Abastecimento Único */}
           <TabsContent value="single" className="mt-4">
             <form onSubmit={handleSubmitSingle} className="grid gap-4 py-4">
               
@@ -238,7 +272,11 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
                 />
               </div>
               
-              <Button type="submit" className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
+              <Button 
+                type="submit" 
+                className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                disabled={activeVehicle.id === ''}
+              >
                 {isEditing ? 'Salvar Alterações' : 'Adicionar Abastecimento'}
               </Button>
             </form>

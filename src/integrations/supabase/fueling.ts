@@ -18,6 +18,7 @@ const fromDb = (record: any): FuelingRecord => ({
   costPerLiter: parseFloat(record.cost_per_liter),
   totalCost: parseFloat(record.total_cost),
   station: record.station,
+  vehicleId: record.vehicle_id, // Adicionado
 });
 
 // Converte do formato do Frontend (camelCase) para o formato de Inserção/Atualização do DB (snake_case)
@@ -30,6 +31,7 @@ const toDbInsert = (record: Omit<FuelingRecord, 'id'>, userId: string): FuelingR
   cost_per_liter: record.costPerLiter,
   total_cost: record.totalCost,
   station: record.station,
+  vehicle_id: record.vehicleId, // Adicionado
 });
 
 // --- Funções de Busca ---
