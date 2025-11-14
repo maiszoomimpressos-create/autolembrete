@@ -43,8 +43,9 @@ const NearbyStationsMap: React.FC<NearbyStationsMapProps> = ({ stations, userLoc
   
   // Obtém a chave da API do Google Maps
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const isApiKeyMissing = !apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY';
 
-  if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
+  if (isApiKeyMissing) {
       return (
           <div className="text-center py-12 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/10 dark:border-red-900">
               <p className="text-lg font-semibold text-red-600 dark:text-red-400">
