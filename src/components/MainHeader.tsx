@@ -46,12 +46,12 @@ interface NavItem {
   icon: React.ElementType;
 }
 
+// Links de navegação principais (agora movidos para o dropdown/menu mobile)
 const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/maintenance', label: 'Manutenções', icon: Wrench },
   { path: '/fueling', label: 'Abastecimentos', icon: Fuel },
   { path: '/history', label: 'Histórico', icon: History },
-  { path: '/settings', label: 'Configurações', icon: Settings },
 ];
 
 const MainHeader: React.FC = () => {
@@ -96,16 +96,36 @@ const MainHeader: React.FC = () => {
     ? profile.firstName.substring(0, 1).toUpperCase() + (profile.lastName ? profile.lastName.substring(0, 1).toUpperCase() : '')
     : user?.email ? user.email.substring(0, 2).toUpperCase() : 'JD';
 
+  // Renderiza links de navegação (usado no menu mobile e no dropdown do avatar)
   const renderNavLinks = (onLinkClick: () => void, isMobile: boolean) => (
     <div className={isMobile ? "flex flex-col space-y-1 p-4" : "space-x-8"}>
         {navItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
             const Icon = item.icon;
+            
+            // Se for desktop (não mobile), renderiza como DropdownMenuItem
+            if (!isMobile) {
+                return (
+                    <DropdownMenuItem
+                        key={item.path}
+                        onClick={() => {
+                            navigate(item.path);
+                            onLinkClick();
+                        }}
+                        className="flex items-center space-x-3 dark:hover:bg-gray-700 cursor-pointer"
+                    >
+                        <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span>{item.label}</span>
+                    </DropdownMenuItem>
+                );
+            }
+            
+            // Se for mobile, renderiza como Button (dentro do Sheet)
             return (
                 <Button
                     key={item.path}
                     variant={isActive ? 'default' : 'ghost'}
-                    className={`cursor-pointer whitespace-nowrap !rounded-button ${isMobile ? 'w-full justify-start' : ''} ${isActive ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+                    className={`cursor-pointer whitespace-nowrap !rounded-button w-full justify-start ${isActive ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
                     onClick={() => {
                         navigate(item.path);
                         onLinkClick();
@@ -190,6 +210,11 @@ const MainHeader: React.FC = () => {
             {getDisplayName()}
         </DropdownMenuLabel>
         
+        {/* Links de Navegação Principais (Movidos para cá) */}
+        {renderNavLinks(() => {}, false)}
+        
+        <DropdownMenuSeparator className="dark:bg-gray-700" />
+        
         {/* Botão de Administrador Master (Visível apenas para admins) */}
         {isAdmin && (
             <>
@@ -240,30 +265,25 @@ const MainHeader: React.FC = () => {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Autolembrete</h1>
           </div>
           
-          {/* Desktop Navigation (Visível apenas em telas maiores que MD) */}
+          {/* Desktop Navigation (Removida a navegação principal, mantendo apenas o logo) */}
           <nav className="hidden md:flex">
-            {renderNavLinks(() => {}, false)}
+            {/* Opcional: Manter o link do Dashboard aqui para acesso rápido */}
+            <Button
+                variant={location.pathname === '/dashboard' ? 'default' : 'ghost'}
+                className={`cursor-pointer whitespace-nowrap !rounded-button ${location.pathname === '/dashboard' ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+                onClick={() => navigate('/dashboard')}
+            >
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Dashboard
+            </Button>
           </nav>
           
           <div className="flex items-center space-x-2 sm:space-x-4">
             
-            {/* Seletor de Veículo (Desktop/Tablet) */}
+            {/* Seletor de Veículo (Desktop/Tablet) - Mantido na barra principal */}
             <div className="hidden md:block">
                 {renderVehicleSelector(false)}
             </div>
-            
-            {/* Botão de Administrador Master (Desktop) */}
-            {isAdmin && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="cursor-pointer whitespace-nowrap !rounded-button text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 hidden lg:flex"
-                  onClick={() => navigate('/master-admin')}
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Admin Master
-                </Button>
-            )}
             
             {/* Botão de Registro de KM Rápido */}
             <Button
@@ -315,7 +335,7 @@ const MainHeader: React.FC = () => {
                             </div>
                         </div>
                         
-                        {/* Links de Navegação */}
+                        {/* Links de Navegação (Mobile) */}
                         <div className="flex-grow overflow-y-auto">
                             {renderNavLinks(() => setIsMobileMenuOpen(false), true)}
                             
@@ -341,6 +361,21 @@ const MainHeader: React.FC = () => {
                                     </Button>
                                 </div>
                             )}
+                            
+                            {/* Configurações (Mobile) */}
+                            <div className="p-4 border-t dark:border-gray-800">
+                                <Button
+                                  variant="ghost"
+                                  className="w-full justify-start text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                                  onClick={() => {
+                                      navigate('/settings');
+                                      setIsMobileMenuOpen(false);
+                                  }}
+                                >
+                                  <Settings className="w-4 h-4 mr-2" />
+                                  Configurações
+                                </Button>
+                            </div>
                         </div>
                         
                         {/* Rodapé do Menu (Perfil e Sair) */}
