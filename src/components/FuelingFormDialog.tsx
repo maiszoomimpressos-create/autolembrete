@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FuelingRecord } from '@/types/fueling';
-import { Fuel, Car } from 'lucide-react';
+import { Fuel, Car, Check } from 'lucide-react';
 import TripFuelingForm from './TripFuelingForm';
 import { useVehicle } from '@/hooks/useVehicle';
 import { cn } from '@/lib/utils';
@@ -83,29 +83,20 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
 
       if (id === 'mileage') {
         newFormData.mileage = parseInt(value) || 0;
-      } else if (id === 'volumeLiters' || id === 'costPerLiter' || id === 'totalCost') {
-        
-        // Garante que os valores sejam tratados como números
-        const numericValue = parseFloat(value) || 0;
-        
-        let liters = prev.volumeLiters;
-        let costPerL = prev.costPerLiter;
-        let total = prev.totalCost;
-
-        if (id === 'volumeLiters') {
-            liters = numericValue;
-            total = calculateTotalCost(liters, costPerL);
-        } else if (id === 'costPerLiter') {
-            costPerL = numericValue;
-            total = calculateTotalCost(liters, costPerL);
-        } else if (id === 'totalCost') {
-            total = numericValue;
-            costPerL = calculateCostPerLiter(total, liters);
-        }
+      } else if (id === 'volumeLiters' || id === 'costPerLiter') {
+        const liters = id === 'volumeLiters' ? parseFloat(value) || 0 : prev.volumeLiters;
+        const costPerL = id === 'costPerLiter' ? parseFloat(value) || 0 : prev.costPerLiter;
         
         newFormData.volumeLiters = liters;
         newFormData.costPerLiter = costPerL;
+        newFormData.totalCost = calculateTotalCost(liters, costPerL);
+      } else if (id === 'totalCost') {
+        // Se o usuário preencher o custo total, recalcula o custo por litro
+        const total = parseFloat(value) || 0;
+        const liters = prev.volumeLiters;
+        
         newFormData.totalCost = total;
+        newFormData.costPerLiter = calculateCostPerLiter(total, liters);
       }
 
       return newFormData;
@@ -153,7 +144,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
             </span>
             {hasMultipleVehicles && (
                 <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
-                    (Mude em Configurações &gt; Veículo)
+                    (Mude em Configurações > Veículo)
                 </span>
             )}
         </div>
