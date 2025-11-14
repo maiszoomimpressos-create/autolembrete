@@ -262,14 +262,14 @@ const MainHeader: React.FC = () => {
             {renderNavLinks(() => {}, false)}
           </nav>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4"> {/* Reduzindo o espaço em mobile */}
             
-            {/* Seletor de Veículo (Desktop/Tablet) - Oculto em mobile */}
+            {/* Seletor de Veículo (Desktop/Tablet) */}
             <div className="hidden sm:block">
                 {renderVehicleSelector()}
             </div>
             
-            {/* Botão de Administrador Master (Desktop) - Oculto em mobile */}
+            {/* Botão de Administrador Master (Desktop) */}
             {isAdmin && (
                 <Button
                   variant="ghost"
@@ -282,23 +282,22 @@ const MainHeader: React.FC = () => {
                 </Button>
             )}
             
-            {/* Botão de Registro de KM Rápido (Visível em todas as telas, mas menor em mobile) */}
+            {/* Botão de Registro de KM Rápido */}
             <Button
               variant="outline"
-              size="sm"
-              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-700"
+              size="icon" // Usando size="icon" em mobile
+              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-700 h-9 w-9 sm:h-10 sm:w-auto"
               onClick={() => setIsMileageDialogOpen(true)}
             >
-              <Gauge className="w-4 h-4 mr-2 sm:mr-2" />
+              <Gauge className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Registrar KM</span>
-              <span className="sm:hidden">KM</span>
             </Button>
             
-            {/* Botão de Alertas (Visível em todas as telas) */}
+            {/* Botão de Alertas */}
             <Button
               variant="ghost"
-              size="sm"
-              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-800 relative"
+              size="icon" // Usando size="icon" em mobile
+              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-800 relative h-9 w-9 sm:h-10 sm:w-10"
               onClick={() => navigate('/alerts')}
             >
               <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -320,7 +319,7 @@ const MainHeader: React.FC = () => {
             {/* Menu Hamburger (Mobile) */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild className="md:hidden">
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="h-9 w-9">
                         <Menu className="w-6 h-6 dark:text-white" />
                     </Button>
                 </SheetTrigger>
