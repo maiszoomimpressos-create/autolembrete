@@ -92,12 +92,18 @@ const NearbyStationsMap: React.FC<NearbyStationsMapProps> = ({ stations, userLoc
               position={position}
               onClick={() => setActiveMarker(station.id)}
               icon={{
-                path: Fuel.toString(), // Usando o ícone Fuel do Lucide (pode precisar de ajuste se o Lucide não for compatível diretamente)
+                // Usando um ícone de pino padrão do Google Maps
+                path: google.maps.SymbolPath.PIN, 
+                scale: 0, // Define a escala como 0 para usar o ícone padrão do pino
                 fillColor: isLowest ? "#10b981" : "#f59e0b", // green-500 ou amber-500
                 fillOpacity: 1,
                 strokeWeight: 0,
-                scale: 0.05, // Ajuste de escala
-                anchor: new google.maps.Point(256, 512), // Ponto de ancoragem
+                labelOrigin: new google.maps.Point(0, -10), // Ajusta a origem do label
+              }}
+              label={{
+                  text: '⛽', // Ícone de bomba de gasolina como label
+                  fontSize: '18px',
+                  color: isLowest ? "#10b981" : "#f59e0b",
               }}
             >
               {activeMarker === station.id && (
