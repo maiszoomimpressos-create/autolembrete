@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Car } from 'lucide-react';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { supabase } from '@/integrations/supabase/client';
+import { useSession } from '@/components/SessionContextProvider';
 
 const IndexPage: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
+  const { user, isLoading } = useSession();
 
-  const handleAuth = () => {
-    // Simulate successful authentication
-    navigate('/dashboard');
-  };
+  // Redireciona se o usuário estiver logado
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
+        <p className="text-lg dark:text-white">Carregando...</p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -34,69 +43,56 @@ const IndexPage: React.FC = () => {
             Gerencie a manutenção do seu veículo de forma inteligente e eficiente
           </p>
         </div>
-        <Card className="w-full bg-white/95 backdrop-blur-sm shadow-2xl dark:bg-gray-900/95 dark:text-white">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-gray-900 dark:text-white">
-              {isLogin ? 'Entrar na sua conta' : 'Criar nova conta'}
-            </CardTitle>
-            <CardDescription className="dark:text-gray-400">
-              {isLogin
-                ? 'Acesse seu painel de controle automotivo'
-                : 'Comece a gerenciar seu veículo hoje'
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="name" className="dark:text-gray-300">Nome completo</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Seu nome completo"
-                  className="border-gray-300 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="dark:text-gray-300">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                className="border-gray-300 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="dark:text-gray-300">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Sua senha"
-                className="border-gray-300 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              />
-            </div>
-            <Button
-              className="w-full !rounded-button whitespace-nowrap cursor-pointer bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
-              onClick={handleAuth}
-            >
-              {isLogin ? 'Entrar' : 'Criar conta'}
-            </Button>
-            <Separator className="dark:bg-gray-700" />
-            <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}
-              </p>
-              <Button
-                variant="link"
-                className="text-blue-600 hover:text-blue-700 cursor-pointer whitespace-nowrap dark:text-blue-400 dark:hover:text-blue-500"
-                onClick={() => setIsLogin(!isLogin)}
-              >
-                {isLogin ? 'Criar conta' : 'Fazer login'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        
+        <div className="bg-white/95 backdrop-blur-sm shadow-2xl p-6 rounded-lg dark:bg-gray-900/95 dark:text-white">
+          <Auth
+            supabaseClient={supabase}
+            appearance={{ theme: ThemeSupa }}
+            theme="dark" // Usando tema escuro para combinar com o fundo
+            providers={[]}
+            redirectTo={window.location.origin + '/dashboard'}
+            localization={{
+                variables: {
+                    sign_in: {
+                        email_label: 'Email',
+                        password_label: 'Senha',
+                        email_input_placeholder: 'Seu email',
+                        password_input_placeholder: 'Sua senha',
+                        button_label: 'Entrar',
+                        loading_button_label: 'Entrando...',
+                        social_provider_text: 'Entrar com {{provider}}',
+                        link_text: 'Já tem uma conta? Faça login',
+                        confirmation_text: 'Verifique seu email para o link de login',
+                    },
+                    sign_up: {
+                        email_label: 'Email',
+                        password_label: 'Criar Senha',
+                        email_input_placeholder: 'Seu email',
+                        password_input_placeholder: 'Sua senha',
+                        button_label: 'Criar Conta',
+                        loading_button_label: 'Criando conta...',
+                        social_provider_text: 'Criar conta com {{provider}}',
+                        link_text: 'Não tem uma conta? Crie uma',
+                        confirmation_text: 'Verifique seu email para confirmar a criação da conta',
+                    },
+                    forgotten_password: {
+                        email_label: 'Email',
+                        email_input_placeholder: 'Seu email',
+                        button_label: 'Enviar instruções de recuperação',
+                        loading_button_label: 'Enviando...',
+                        link_text: 'Esqueceu sua senha?',
+                        confirmation_text: 'Verifique seu email para o link de recuperação de senha',
+                    },
+                    update_password: {
+                        password_label: 'Nova Senha',
+                        password_input_placeholder: 'Sua nova senha',
+                        button_label: 'Atualizar Senha',
+                        loading_button_label: 'Atualizando...',
+                    },
+                }
+            }}
+          />
+        </div>
       </div>
     </div>
   );

@@ -12,8 +12,10 @@ import {
   Bell,
   User,
   LogOut,
-  Fuel, // Novo Import
+  Fuel,
+  Shield, // Novo Import
 } from 'lucide-react';
+import { useSession } from '@/components/SessionContextProvider';
 
 interface NavItem {
   path: string;
@@ -24,7 +26,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/maintenance', label: 'Manutenções', icon: Wrench },
-  { path: '/fueling', label: 'Abastecimentos', icon: Fuel }, // Novo Item
+  { path: '/fueling', label: 'Abastecimentos', icon: Fuel },
   { path: '/history', label: 'Histórico', icon: History },
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
@@ -32,6 +34,7 @@ const navItems: NavItem[] = [
 const MainHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, signOut, isAdmin } = useSession(); // Usando isAdmin
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
 
@@ -51,24 +54,45 @@ const MainHeader: React.FC = () => {
     setIsAvatarMenuOpen(!isAvatarMenuOpen);
   };
 
-  const handleMenuItemClick = (path: string) => {
+  const handleMenuItemClick = async (path: string) => {
     if (path === '/logout') {
+      await signOut();
       navigate('/');
     } else {
       navigate(path);
     }
     setIsAvatarMenuOpen(false);
   };
+  
+  const userInitials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'JD';
 
   const renderAvatarDropdown = () => (
     <div ref={avatarMenuRef} className="relative">
       <Avatar className="cursor-pointer" onClick={handleAvatarClick}>
         <AvatarImage src="" />
-        <AvatarFallback>JD</AvatarFallback>
+        <AvatarFallback>{userInitials}</AvatarFallback>
       </Avatar>
       {isAvatarMenuOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-gray-800 dark:border-gray-700">
           <div className="py-2">
+            <div className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white truncate border-b dark:border-gray-700">
+                {user?.email || 'Usuário'}
+            </div>
+            
+            {/* Botão de Administrador Master (Visível apenas para admins) */}
+            {isAdmin && (
+                <>
+                    <button
+                      onClick={() => handleMenuItemClick('/master-admin')}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20"
+                    >
+                      <Shield className="w-4 h-4 text-red-500" />
+                      <span>Admin Master</span>
+                    </button>
+                    <Separator className="my-1 dark:bg-gray-700" />
+                </>
+            )}
+            
             <button
               onClick={() => handleMenuItemClick('/settings/profile')}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
@@ -123,6 +147,18 @@ const MainHeader: React.FC = () => {
             })}
           </nav>
           <div className="flex items-center space-x-4">
+            {/* Botão de Administrador Master na barra de navegação principal (opcional, mas útil) */}
+            {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="cursor-pointer whitespace-nowrap !rounded-button text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 hidden lg:flex"
+                  onClick={() => navigate('/master-admin')}
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Admin Master
+                </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
