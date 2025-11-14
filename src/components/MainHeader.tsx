@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -60,10 +60,8 @@ const MainHeader: React.FC = () => {
   const location = useLocation();
   const { user, signOut, isAdmin } = useSession();
   const { profile } = useProfile();
-  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const [isMileageDialogOpen, setIsMileageDialogOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const avatarMenuRef = useRef<HTMLDivElement>(null);
   
   // Hooks de Veículo
   const { vehicle: activeVehicle, vehicles, isLoading: isLoadingVehicle } = useVehicle();
@@ -77,25 +75,7 @@ const MainHeader: React.FC = () => {
   const { alerts: dateAlerts } = useDateAlerts(maintenanceRecords);
   const totalAlerts = mileageAlerts.length + dateAlerts.length;
 
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
-        setIsAvatarMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  const handleAvatarClick = () => {
-    setIsAvatarMenuOpen(!isAvatarMenuOpen);
-  };
-  
   const handleMenuItemClick = (path: string) => {
-    setIsAvatarMenuOpen(false);
     if (path === '/logout') {
         signOut();
         navigate('/');
@@ -117,7 +97,7 @@ const MainHeader: React.FC = () => {
     : user?.email ? user.email.substring(0, 2).toUpperCase() : 'JD';
 
   // Renderiza links de navegação como DropdownMenuItems
-  const renderNavLinksAsDropdown = (onLinkClick: () => void) => (
+  const renderNavLinksAsDropdown = () => (
     <>
         {navItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
@@ -129,10 +109,7 @@ const MainHeader: React.FC = () => {
             return (
                 <DropdownMenuItem
                     key={item.path}
-                    onClick={() => {
-                        navigate(item.path);
-                        onLinkClick();
-                    }}
+                    onClick={() => handleMenuItemClick(item.path)}
                     className={`cursor-pointer flex items-center space-x-3 ${isActive ? 'bg-gray-100 dark:bg-gray-700/50' : 'dark:hover:bg-gray-700'}`}
                 >
                     <Icon className={`w-4 h-4 ${isAlertsLink && totalAlerts > 0 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`} />
@@ -180,59 +157,57 @@ const MainHeader: React.FC = () => {
   );
 
   const renderAvatarDropdown = () => (
-    <div ref={avatarMenuRef} className="relative">
-      <Avatar className="cursor-pointer" onClick={handleAvatarClick}>
-        <AvatarImage src={profile.avatarUrl || ""} />
-        <AvatarFallback>{userInitials}</AvatarFallback>
-      </Avatar>
-      {isAvatarMenuOpen && (
-        <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-gray-800 dark:border-gray-700">
-          <div className="py-2">
-            <div className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white truncate border-b dark:border-gray-700">
-                {getDisplayName()}
-            </div>
-            
-            {/* Links de Navegação */}
-            <div className="py-1">
-                {renderNavLinksAsDropdown(() => setIsAvatarMenuOpen(false))}
-            </div>
-            
-            <Separator className="my-1 dark:bg-gray-700" />
-            
-            {/* Botão de Administrador Master (Visível apenas para admins) */}
-            {isAdmin && (
-                <>
-                    <DropdownMenuItem
-                      onClick={() => handleMenuItemClick('/master-admin')}
-                      className="cursor-pointer flex items-center space-x-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    >
-                      <Shield className="w-4 h-4 text-red-500" />
-                      <span>Admin Master</span>
-                    </DropdownMenuItem>
-                    <Separator className="my-1 dark:bg-gray-700" />
-                </>
-            )}
-            
-            {/* Configurações de Perfil e Sair */}
-            <DropdownMenuItem
-              onClick={() => handleMenuItemClick('/settings/profile')}
-              className="cursor-pointer flex items-center space-x-3 dark:hover:bg-gray-700"
-            >
-              <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span>Ver Perfil</span>
-            </DropdownMenuItem>
-            
-            <DropdownMenuItem
-              onClick={() => handleMenuItemClick('/logout')}
-              className="cursor-pointer flex items-center space-x-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-            >
-              <LogOut className="w-4 h-4 text-red-500" />
-              <span>Sair</span>
-            </DropdownMenuItem>
-          </div>
-        </div>
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Avatar className="cursor-pointer">
+          <AvatarImage src={profile.avatarUrl || ""} />
+          <AvatarFallback>{userInitials}</AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 dark:bg-gray-800 dark:border-gray-700">
+        <DropdownMenuLabel className="text-sm font-medium text-gray-900 dark:text-white truncate">
+            {getDisplayName()}
+        </DropdownMenuLabel>
+        
+        <DropdownMenuSeparator className="dark:bg-gray-700" />
+        
+        {/* Links de Navegação */}
+        {renderNavLinksAsDropdown()}
+        
+        <DropdownMenuSeparator className="my-1 dark:bg-gray-700" />
+        
+        {/* Botão de Administrador Master (Visível apenas para admins) */}
+        {isAdmin && (
+            <>
+                <DropdownMenuItem
+                  onClick={() => handleMenuItemClick('/master-admin')}
+                  className="cursor-pointer flex items-center space-x-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  <Shield className="w-4 h-4 text-red-500" />
+                  <span>Admin Master</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1 dark:bg-gray-700" />
+            </>
+        )}
+        
+        {/* Configurações de Perfil e Sair */}
+        <DropdownMenuItem
+          onClick={() => handleMenuItemClick('/settings/profile')}
+          className="cursor-pointer flex items-center space-x-3 dark:hover:bg-gray-700"
+        >
+          <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <span>Ver Perfil</span>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem
+          onClick={() => handleMenuItemClick('/logout')}
+          className="cursor-pointer flex items-center space-x-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+        >
+          <LogOut className="w-4 h-4 text-red-500" />
+          <span>Sair</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
   
   const renderVehicleSelector = () => {
