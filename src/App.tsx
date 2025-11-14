@@ -9,6 +9,7 @@ import FuelingPage from "./pages/FuelingPage";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import MasterAdminPage from "./pages/MasterAdminPage";
+import AlertsPage from "./pages/AlertsPage"; // Novo Import
 import NotFound from "./pages/NotFound";
 import MainHeader from "./components/MainHeader";
 import ThemeProvider from "./components/ThemeProvider";
@@ -47,6 +48,7 @@ const App = () => (
                   <Route path="fueling" element={<FuelingPage />} />
                   <Route path="history" element={<HistoryPage />} />
                   <Route path="settings/*" element={<SettingsPage />} />
+                  <Route path="alerts" element={<AlertsPage />} /> {/* Nova Rota */}
                 </Route>
               </Route>
               
