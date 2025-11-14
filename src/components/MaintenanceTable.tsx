@@ -50,10 +50,10 @@ const MaintenanceTable: React.FC<MaintenanceTableProps> = ({ records, onEdit, on
           <TableRow>
             <TableHead className="w-[150px]">Data</TableHead>
             <TableHead>Tipo</TableHead>
-            <TableHead>Descrição</TableHead>
+            <TableHead className="hidden md:table-cell">Descrição</TableHead> {/* Ocultado em mobile */}
             <TableHead className="text-right">Custo</TableHead>
             <TableHead className="text-center">Status</TableHead>
-            <TableHead className="w-[150px] text-right">Ações</TableHead> {/* Aumentando a largura para acomodar o botão */}
+            <TableHead className="w-[150px] text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -65,7 +65,7 @@ const MaintenanceTable: React.FC<MaintenanceTableProps> = ({ records, onEdit, on
                   ? record.customType 
                   : record.type}
               </TableCell>
-              <TableCell className="max-w-xs truncate">{record.description}</TableCell>
+              <TableCell className="max-w-xs truncate hidden md:table-cell">{record.description}</TableCell> {/* Ocultado em mobile */}
               <TableCell className="text-right font-semibold text-gray-900 dark:text-white">
                 {record.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </TableCell>

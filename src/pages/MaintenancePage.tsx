@@ -137,7 +137,7 @@ const MaintenancePage: React.FC = () => {
           disabled={isMutating}
         >
           {isMutating ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <Loader2 className="w-4 h-4 mr-1 sm:mr-2 animate-spin" />
           ) : (
             <PlusCircle className="w-4 h-4 mr-1 sm:mr-2" />
           )}
