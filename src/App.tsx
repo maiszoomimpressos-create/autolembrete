@@ -8,11 +8,12 @@ import MaintenancePage from "./pages/MaintenancePage";
 import FuelingPage from "./pages/FuelingPage";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
-import MasterAdminPage from "./pages/MasterAdminPage"; // Novo Import
+import MasterAdminPage from "./pages/MasterAdminPage";
 import NotFound from "./pages/NotFound";
 import AppLayout from "./components/AppLayout";
 import ThemeProvider from "./components/ThemeProvider";
 import SessionContextProvider from "./components/SessionContextProvider";
+import ProtectedRoute from "./components/ProtectedRoute"; // Novo Import
 
 const queryClient = new QueryClient();
 
@@ -28,13 +29,21 @@ const App = () => (
               <Route path="/" element={<IndexPage />} />
               
               {/* Rotas protegidas/com layout */}
-              <Route path="/" element={<AppLayout />}>
-                <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="maintenance" element={<MaintenancePage />} />
-                <Route path="fueling" element={<FuelingPage />} />
-                <Route path="history" element={<HistoryPage />} />
-                <Route path="settings/*" element={<SettingsPage />} />
-                <Route path="master-admin" element={<MasterAdminPage />} /> {/* Nova Rota */}
+              <Route path="/" element={<ProtectedRoute />}>
+                <Route path="/" element={<AppLayout />}>
+                  <Route path="dashboard" element={<DashboardPage />} />
+                  <Route path="maintenance" element={<MaintenancePage />} />
+                  <Route path="fueling" element={<FuelingPage />} />
+                  <Route path="history" element={<HistoryPage />} />
+                  <Route path="settings/*" element={<SettingsPage />} />
+                </Route>
+              </Route>
+              
+              {/* Rota de Admin Master (Protegida e restrita a administradores) */}
+              <Route path="/" element={<ProtectedRoute adminOnly={true} />}>
+                <Route path="/" element={<AppLayout />}>
+                    <Route path="master-admin" element={<MasterAdminPage />} />
+                </Route>
               </Route>
               
               {/* Rota Catch-all */}
