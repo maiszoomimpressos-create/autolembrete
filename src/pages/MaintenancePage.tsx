@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Wrench } from 'lucide-react';
+import { PlusCircle, Wrench, Loader2 } from 'lucide-react';
 import MaintenanceTable from '@/components/MaintenanceTable';
 import MaintenanceFormDialog from '@/components/MaintenanceFormDialog';
 import { MaintenanceRecord } from '@/types/maintenance';
@@ -21,12 +21,12 @@ const MaintenancePage: React.FC = () => {
   const { records: fuelingRecords } = useFuelingRecords();
   const { currentMileage } = useMileageRecords(fuelingRecords);
 
-  const { records, addOrUpdateRecord, deleteRecord } = useMaintenanceRecords();
+  const { records, addOrUpdateRecord, deleteRecord, isLoading, isMutating } = useMaintenanceRecords();
   const upcomingRecord = useUpcomingMaintenance(records);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MaintenanceRecord | null>(null);
-  const [alertToCreateFrom, setAlertToCreateFrom] = useState<MaintenanceAlert | null>(null); // Novo estado para criação a partir de alerta
+  const [alertToCreateFrom, setAlertToCreateFrom] = useState<MaintenanceAlert | null>(null);
 
   // Efeito para lidar com a navegação de edição/criação do Dashboard
   useEffect(() => {
@@ -48,36 +48,37 @@ const MaintenancePage: React.FC = () => {
   }, [location.state, records]);
 
 
-  const handleAddOrEdit = (data: Omit<MaintenanceRecord, 'id'>) => {
-    if (recordToEdit) {
-      // Edição
-      addOrUpdateRecord(data, recordToEdit.id);
-      showSuccess('Manutenção atualizada com sucesso!');
-    } else {
-      // Adição
-      addOrUpdateRecord(data);
-      showSuccess('Nova manutenção adicionada!');
+  const handleAddOrEdit = async (data: Omit<MaintenanceRecord, 'id'>) => {
+    try {
+        await addOrUpdateRecord(data, recordToEdit?.id);
+        if (recordToEdit) {
+            showSuccess('Manutenção atualizada com sucesso!');
+        } else {
+            showSuccess('Nova manutenção adicionada!');
+        }
+    } catch (e) {
+        // Erro já tratado no hook de mutação, mas mantemos o try/catch para consistência
     }
     setRecordToEdit(null);
-    setAlertToCreateFrom(null); // Limpa o alerta após submissão
+    setAlertToCreateFrom(null);
+    setIsDialogOpen(false);
   };
 
   const handleEdit = (record: MaintenanceRecord) => {
     setRecordToEdit(record);
-    setAlertToCreateFrom(null); // Garante que não estamos em modo de criação por alerta
+    setAlertToCreateFrom(null);
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja deletar este registro de manutenção?')) {
-      deleteRecord(id);
+      await deleteRecord(id);
       showSuccess('Registro de manutenção deletado.');
     }
   };
   
-  const handleComplete = (record: MaintenanceRecord) => {
+  const handleComplete = async (record: MaintenanceRecord) => {
     // Ao concluir, abrimos o formulário para que o usuário possa confirmar o KM e o Custo, se necessário.
-    // Se o custo for 0 ou o KM for 0, sugerimos que ele edite.
     if (record.cost === 0 || record.mileage === 0) {
         showError('Por favor, edite o registro para confirmar o KM e o Custo antes de concluir.');
         handleEdit(record);
@@ -85,7 +86,7 @@ const MaintenancePage: React.FC = () => {
     }
     
     // Se já tiver KM e Custo, podemos concluir diretamente
-    addOrUpdateRecord({ ...record, status: 'Concluído' }, record.id);
+    await addOrUpdateRecord({ ...record, status: 'Concluído' }, record.id);
     showSuccess(`Manutenção '${record.type}' marcada como concluída!`);
   };
 
@@ -95,15 +96,21 @@ const MaintenancePage: React.FC = () => {
     setIsDialogOpen(true);
   };
   
-  // Funções vazias para o UpcomingMaintenanceCard, pois ele não é usado aqui, mas o DashboardPage precisa delas.
   const handleAlertClick = (alert: MaintenanceAlert) => {
-      // No MaintenancePage, se clicarmos em um alerta, abrimos o formulário de edição do registro original.
       const originalRecord = records.find(r => r.id === alert.id.split('-')[0]);
       if (originalRecord) {
           handleEdit(originalRecord);
       }
   };
 
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 dark:text-blue-400" />
+        <p className="mt-4 dark:text-white">Carregando registros de manutenção...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -115,24 +122,26 @@ const MaintenancePage: React.FC = () => {
         <Button 
           onClick={handleOpenDialog}
           className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+          disabled={isMutating}
         >
-          <PlusCircle className="w-4 h-4 mr-2" />
+          {isMutating ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <PlusCircle className="w-4 h-4 mr-2" />
+          )}
           Adicionar Manutenção
         </Button>
       </div>
 
-      {/* Cartão de Próxima Manutenção (Mantido aqui para consistência, mas o Dashboard é o principal local) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
-          {/* Aqui usamos o UpcomingMaintenanceCard apenas para exibir o próximo agendamento/pendente */}
           <UpcomingMaintenanceCard 
             record={upcomingRecord} 
-            fallbackAlert={null} // Não precisamos de fallback aqui
+            fallbackAlert={null}
             onEdit={handleEdit} 
             onAlertClick={handleAlertClick}
           />
         </div>
-        {/* Placeholder para outras métricas ou filtros */}
         <div className="md:col-span-2 flex items-center justify-center bg-gray-50 border border-dashed rounded-lg dark:bg-gray-800 dark:border-gray-700 p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">
                 Espaço para filtros ou estatísticas rápidas de manutenção.
@@ -151,7 +160,7 @@ const MaintenancePage: React.FC = () => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         recordToEdit={recordToEdit}
-        alertToCreateFrom={alertToCreateFrom} // Passando o novo prop
+        alertToCreateFrom={alertToCreateFrom}
         onSubmit={handleAddOrEdit}
         currentMileage={currentMileage}
       />
