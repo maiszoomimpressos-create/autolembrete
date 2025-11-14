@@ -126,26 +126,29 @@ const MaintenancePage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-3">
-          <Wrench className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-3 flex-shrink-0">
+          <Wrench className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-400" />
           <span>Manutenções</span>
         </h2>
         <Button 
           onClick={handleOpenDialog}
-          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 flex-shrink-0"
+          size="sm" // Usando tamanho pequeno em mobile
           disabled={isMutating}
         >
           {isMutating ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : (
-            <PlusCircle className="w-4 h-4 mr-2" />
+            <PlusCircle className="w-4 h-4 mr-1 sm:mr-2" />
           )}
-          Adicionar Manutenção
+          <span className="hidden sm:inline">Adicionar Manutenção</span>
+          <span className="sm:hidden">Adicionar</span>
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
+        {/* Card de Próxima Manutenção (Ocupa 1 coluna em mobile, 1 em desktop) */}
+        <div className="col-span-1">
           <UpcomingMaintenanceCard 
             record={upcomingRecord} 
             fallbackAlert={upcomingRecord ? null : mostUrgentAlert}
@@ -153,7 +156,8 @@ const MaintenancePage: React.FC = () => {
             onAlertClick={handleAlertClick}
           />
         </div>
-        <div className="md:col-span-2 flex items-center justify-center bg-gray-50 border border-dashed rounded-lg dark:bg-gray-800 dark:border-gray-700 p-4">
+        {/* Espaço para Filtros/Estatísticas (Ocupa 1 coluna em mobile, 2 em desktop) */}
+        <div className="col-span-1 md:col-span-2 flex items-center justify-center bg-gray-50 border border-dashed rounded-lg dark:bg-gray-800 dark:border-gray-700 p-4 min-h-[100px]">
             <p className="text-sm text-gray-500 dark:text-gray-400">
                 Espaço para filtros ou estatísticas rápidas de manutenção.
             </p>
