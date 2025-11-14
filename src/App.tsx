@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import IndexPage from "./pages/IndexPage";
 import DashboardPage from "./pages/DashboardPage";
 import MaintenancePage from "./pages/MaintenancePage";
+import FuelingPage from "./pages/FuelingPage"; // Novo Import
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/" element={<AppLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="maintenance" element={<MaintenancePage />} />
+            <Route path="fueling" element={<FuelingPage />} /> {/* Nova Rota */}
             <Route path="history" element={<HistoryPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

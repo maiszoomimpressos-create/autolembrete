@@ -12,6 +12,7 @@ import {
   Bell,
   User,
   LogOut,
+  Fuel, // Novo Import
 } from 'lucide-react';
 
 interface NavItem {
@@ -23,6 +24,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/maintenance', label: 'Manutenções', icon: Wrench },
+  { path: '/fueling', label: 'Abastecimentos', icon: Fuel }, // Novo Item
   { path: '/history', label: 'Histórico', icon: History },
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
@@ -68,7 +70,7 @@ const MainHeader: React.FC = () => {
         <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-gray-800 dark:border-gray-700">
           <div className="py-2">
             <button
-              onClick={() => handleMenuItemClick('/settings/profile')} // Alterado para a rota aninhada
+              onClick={() => handleMenuItemClick('/settings/profile')}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
             >
               <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
