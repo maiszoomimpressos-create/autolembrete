@@ -23,6 +23,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { showSuccess } from '@/utils/toast';
+import FileUpload from './FileUpload'; // Import the new component
 
 // Define the schema for maintenance data
 const maintenanceSchema = z.object({
@@ -42,6 +43,8 @@ const maintenanceSchema = z.object({
   }).min(0, "O custo não pode ser negativo."),
   workshop: z.string().min(2, "O nome da oficina é obrigatório."),
   notes: z.string().optional(),
+  // Simulated file data storage (e.g., URL or file name)
+  invoiceUrl: z.string().optional(), 
 });
 
 type MaintenanceFormValues = z.infer<typeof maintenanceSchema>;
@@ -70,6 +73,7 @@ export const MaintenanceForm: React.FC<MaintenanceFormProps> = ({ initialData = 
       cost: initialData.cost || 0,
       workshop: initialData.workshop || '',
       notes: initialData.notes || '',
+      invoiceUrl: initialData.invoiceUrl || '', // Initialize invoiceUrl
     },
   });
 
@@ -84,8 +88,14 @@ export const MaintenanceForm: React.FC<MaintenanceFormProps> = ({ initialData = 
         cost: 0,
         workshop: '',
         notes: '',
+        invoiceUrl: '',
       });
     }
+  };
+  
+  const handleFileUpload = (file: File) => {
+    // Simulate storing the file URL/path in the form state
+    form.setValue('invoiceUrl', `uploaded/invoice/${file.name}`, { shouldDirty: true });
   };
 
   return (
@@ -216,6 +226,25 @@ export const MaintenanceForm: React.FC<MaintenanceFormProps> = ({ initialData = 
             )}
           />
         </div>
+
+        <FileUpload
+          label="Anexar Nota Fiscal (Opcional)"
+          onFileUpload={handleFileUpload}
+          acceptedFileTypes=".pdf, .jpg, .png"
+        />
+        
+        {/* Hidden field to store the simulated file URL/path */}
+        <FormField
+          control={form.control}
+          name="invoiceUrl"
+          render={({ field }) => (
+            <FormItem className="hidden">
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

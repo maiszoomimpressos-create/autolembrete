@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Plus, OilCan, Car, Check, Pencil, Eye, Disc } from 'lucide-react';
+import { Plus, OilCan, Car, Check, Pencil, Eye, Disc, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { MaintenanceForm } from '@/components/MaintenanceForm';
 import MaintenanceEditDialog from '@/components/MaintenanceEditDialog';
@@ -26,6 +26,7 @@ interface MaintenanceRecord {
   notes: string;
   status: 'pending' | 'scheduled' | 'completed';
   urgency: 'Urgente' | 'Atenção' | 'Normal';
+  invoiceUrl?: string; // New field for invoice
 }
 
 const initialMaintenanceData: MaintenanceRecord[] = [
@@ -40,6 +41,7 @@ const initialMaintenanceData: MaintenanceRecord[] = [
     notes: 'Verificar também o filtro de ar e nível do fluido de freio.',
     status: 'pending',
     urgency: 'Urgente',
+    invoiceUrl: undefined,
   },
   {
     id: 'm2',
@@ -52,6 +54,7 @@ const initialMaintenanceData: MaintenanceRecord[] = [
     notes: 'Revisão completa incluindo troca de velas, filtros e verificação geral.',
     status: 'scheduled',
     urgency: 'Atenção',
+    invoiceUrl: 'uploaded/invoice/honda_90k_invoice.pdf',
   },
   {
     id: 'm3',
@@ -64,6 +67,7 @@ const initialMaintenanceData: MaintenanceRecord[] = [
     notes: 'Serviço realizado com sucesso. Pneus em bom estado.',
     status: 'completed',
     urgency: 'Normal',
+    invoiceUrl: 'uploaded/invoice/pneus_cia_alinhamento.jpg',
   },
 ];
 
@@ -125,6 +129,7 @@ const MaintenancePage: React.FC = () => {
       type: data.type,
       status: 'scheduled', // Default status for new items
       urgency: 'Normal', // Default urgency
+      invoiceUrl: data.invoiceUrl, // Capture the simulated URL
     };
     setMaintenanceList([newRecord, ...maintenanceList]);
     setIsAddDialogOpen(false);
@@ -239,6 +244,17 @@ const MaintenancePage: React.FC = () => {
                       <Badge className={badge}>
                         {maintenance.status === 'completed' ? 'Concluído' : maintenance.urgency}
                       </Badge>
+                      {maintenance.invoiceUrl && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer whitespace-nowrap !rounded-button dark:text-white dark:border-gray-700 dark:hover:bg-gray-700"
+                          onClick={() => window.open(maintenance.invoiceUrl, '_blank')}
+                        >
+                          <FileText className="w-4 h-4 mr-1" />
+                          Nota
+                        </Button>
+                      )}
                       {maintenance.status !== 'completed' && (
                         <Button
                           variant="outline"
