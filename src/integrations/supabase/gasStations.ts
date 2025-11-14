@@ -13,6 +13,8 @@ const fromDb = (record: any): GasStation => ({
   name: record.name,
   city: record.city,
   state: record.state,
+  latitude: record.latitude ? parseFloat(record.latitude) : null,
+  longitude: record.longitude ? parseFloat(record.longitude) : null,
 });
 
 // --- Funções de Busca ---
@@ -60,6 +62,8 @@ export const useGasStationMutations = () => {
           name: stationData.name,
           city: stationData.city || null,
           state: stationData.state || null,
+          latitude: stationData.latitude,
+          longitude: stationData.longitude,
           added_by: userId,
       };
       

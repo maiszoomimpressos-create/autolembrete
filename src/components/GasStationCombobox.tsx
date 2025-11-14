@@ -21,6 +21,8 @@ const GasStationCombobox: React.FC<GasStationComboboxProps> = ({ selectedStation
   const [newStationName, setNewStationName] = useState('');
   const [newStationCity, setNewStationCity] = useState('');
   const [newStationState, setNewStationState] = useState('');
+  const [newStationLatitude, setNewStationLatitude] = useState<string>('');
+  const [newStationLongitude, setNewStationLongitude] = useState<string>('');
 
   const { data: stations = [], isLoading: isLoadingStations } = useGasStationsQuery();
   const { addStation, isMutating } = useGasStationMutations();
@@ -39,11 +41,16 @@ const GasStationCombobox: React.FC<GasStationComboboxProps> = ({ selectedStation
         return;
     }
     
+    const latitude = newStationLatitude ? parseFloat(newStationLatitude) : null;
+    const longitude = newStationLongitude ? parseFloat(newStationLongitude) : null;
+    
     try {
         const newStation = await addStation({ 
             name, 
             city: newStationCity.trim(), 
-            state: newStationState.trim() 
+            state: newStationState.trim(),
+            latitude,
+            longitude,
         });
         
         // Seleciona o novo posto e fecha o modal
@@ -51,6 +58,8 @@ const GasStationCombobox: React.FC<GasStationComboboxProps> = ({ selectedStation
         setNewStationName('');
         setNewStationCity('');
         setNewStationState('');
+        setNewStationLatitude('');
+        setNewStationLongitude('');
         setIsAddingNew(false);
         setOpen(false);
     } catch (error) {
@@ -82,6 +91,24 @@ const GasStationCombobox: React.FC<GasStationComboboxProps> = ({ selectedStation
               placeholder="Estado (Opcional)"
               value={newStationState}
               onChange={(e) => setNewStationState(e.target.value)}
+              className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              placeholder="Latitude (Opcional)"
+              type="number"
+              step="0.0000001"
+              value={newStationLatitude}
+              onChange={(e) => setNewStationLatitude(e.target.value)}
+              className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+            <Input
+              placeholder="Longitude (Opcional)"
+              type="number"
+              step="0.0000001"
+              value={newStationLongitude}
+              onChange={(e) => setNewStationLongitude(e.target.value)}
               className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>

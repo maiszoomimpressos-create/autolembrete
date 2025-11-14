@@ -18,6 +18,7 @@ import {
   Check,
   ChevronDown,
   Menu,
+  Map, // Importando Map
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
 import { useProfile } from '@/hooks/useProfile';
@@ -51,6 +52,7 @@ const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/maintenance', label: 'Manutenções', icon: Wrench },
   { path: '/fueling', label: 'Abastecimentos', icon: Fuel },
+  { path: '/prices', label: 'Comparar Preços', icon: Map }, // Novo Link
   { path: '/history', label: 'Histórico', icon: History },
 ];
 
