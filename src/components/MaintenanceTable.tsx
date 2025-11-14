@@ -59,7 +59,11 @@ const MaintenanceTable: React.FC<MaintenanceTableProps> = ({ records, onEdit, on
           {records.map((record) => (
             <TableRow key={record.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
               <TableCell className="font-medium">{record.date}</TableCell>
-              <TableCell>{record.type}</TableCell>
+              <TableCell>
+                {record.type === 'Outro' && record.customType 
+                  ? record.customType 
+                  : record.type}
+              </TableCell>
               <TableCell className="max-w-xs truncate">{record.description}</TableCell>
               <TableCell className="text-right font-semibold text-gray-900 dark:text-white">
                 {record.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

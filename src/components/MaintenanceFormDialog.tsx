@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MaintenanceRecord } from '@/types/maintenance';
 import { Wrench } from 'lucide-react';
+import { showError } from '@/utils/toast';
 
 interface MaintenanceFormDialogProps {
   isOpen: boolean;
@@ -24,11 +25,12 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   const isEditing = !!recordToEdit;
   const title = isEditing ? 'Editar Manutenção' : 'Adicionar Nova Manutenção';
 
-  // Simulação de estado do formulário (para simplificar, não usaremos react-hook-form ainda)
+  // Simulação de estado do formulário
   const [formData, setFormData] = React.useState<Omit<MaintenanceRecord, 'id'>>({
     date: recordToEdit?.date || new Date().toISOString().split('T')[0],
     mileage: recordToEdit?.mileage || 0,
     type: recordToEdit?.type || 'Troca de Óleo',
+    customType: recordToEdit?.customType || '', // Novo campo
     description: recordToEdit?.description || '',
     cost: recordToEdit?.cost || 0,
     status: recordToEdit?.status || 'Concluído',
@@ -40,6 +42,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         date: recordToEdit.date,
         mileage: recordToEdit.mileage,
         type: recordToEdit.type,
+        customType: recordToEdit.customType || '',
         description: recordToEdit.description,
         cost: recordToEdit.cost,
         status: recordToEdit.status,
@@ -49,12 +52,13 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         date: new Date().toISOString().split('T')[0],
         mileage: 0,
         type: 'Troca de Óleo',
+        customType: '',
         description: '',
         cost: 0,
         status: 'Concluído',
       });
     }
-  }, [recordToEdit]);
+  }, [recordToEdit, isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -68,14 +72,25 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     setFormData(prev => ({
       ...prev,
       [id]: value,
+      // Limpa customType se o tipo não for 'Outro'
+      customType: value !== 'Outro' ? '' : prev.customType,
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação para o campo 'Outro'
+    if (formData.type === 'Outro' && !formData.customType?.trim()) {
+        showError('Por favor, especifique o nome da manutenção personalizada.');
+        return;
+    }
+
     onSubmit(formData);
     onOpenChange(false);
   };
+
+  const isCustomType = formData.type === 'Outro';
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -128,6 +143,23 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Campo de Nome Personalizado (aparece se Tipo for 'Outro') */}
+          {isCustomType && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customType" className="text-right dark:text-gray-300">Nome</Label>
+              <Input
+                id="customType"
+                type="text"
+                value={formData.customType}
+                onChange={handleChange}
+                placeholder="Ex: Troca de Bateria"
+                className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                required
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="cost" className="text-right dark:text-gray-300">Custo (R$)</Label>
             <Input
