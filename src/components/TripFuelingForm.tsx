@@ -1,28 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FuelingRecord } from '@/types/fueling';
-import { Plus, Trash2, Gauge } from 'lucide-react';
+import { Plus, Trash2, Gauge, TrendingUp } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
 // Tipo auxiliar para o estado do formulário de viagem
-interface TripRecord {
-  date: string;
-  mileage: number; // KM final do abastecimento
-  fuelType: FuelingRecord['fuelType'];
-  volumeLiters: number;
-  costPerLiter: number;
-  totalCost: number;
-  station: string;
-}
+interface TripRecord extends Omit<FuelingRecord, 'id'> {}
 
 interface TripFuelingFormProps {
   onSubmit: (data: Omit<FuelingRecord, 'id'>) => void;
   onCancel: () => void;
 }
+
+// Helper function to calculate efficiency for a single segment
+const calculateEfficiency = (distance: number, volume: number): number | null => {
+    if (distance > 0 && volume > 0) {
+        return parseFloat((distance / volume).toFixed(2));
+    }
+    return null;
+};
 
 const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel }) => {
   const [initialMileage, setInitialMileage] = useState<number>(0); // KM Inicial da Viagem
@@ -39,30 +39,36 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
     },
   ]);
 
-  // Helper function to calculate efficiency
-  const calculateEfficiency = (index: number, records: TripRecord[], startKm: number): number | null => {
-    if (index < 0 || index >= records.length) return null;
-
-    const currentRecord = records[index];
-    const volume = currentRecord.volumeLiters;
-
-    if (volume <= 0) return null;
-
-    let startMileage: number;
-    if (index === 0) {
-      startMileage = startKm;
-    } else {
-      startMileage = records[index - 1].mileage;
+  // Cálculo de Métricas da Viagem
+  const tripMetrics = useMemo(() => {
+    let totalDistance = 0;
+    let totalVolume = 0;
+    let totalCost = 0;
+    let previousMileage = initialMileage;
+    
+    if (initialMileage > 0) {
+        tripRecords.forEach(record => {
+            if (record.mileage > previousMileage) {
+                totalDistance += (record.mileage - previousMileage);
+                totalVolume += record.volumeLiters;
+                totalCost += record.totalCost;
+                previousMileage = record.mileage;
+            }
+        });
     }
 
-    const endMileage = currentRecord.mileage;
-    const distance = endMileage - startMileage;
+    const averageEfficiency = totalDistance > 0 && totalVolume > 0 
+        ? parseFloat((totalDistance / totalVolume).toFixed(2)) 
+        : null;
 
-    if (distance > 0) {
-      return parseFloat((distance / volume).toFixed(2));
-    }
-    return null;
-  };
+    return {
+        totalDistance,
+        totalVolume,
+        totalCost,
+        averageEfficiency,
+    };
+  }, [initialMileage, tripRecords]);
+
 
   const handleAddRecord = () => {
     // Sugere o KM final do último abastecimento como KM inicial para o novo registro
@@ -163,7 +169,7 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
       onSubmit(record);
     });
 
-    showSuccess(`Viagem registrada! ${tripRecords.length} abastecimentos adicionados.`);
+    showSuccess(`Viagem registrada! ${tripRecords.length} abastecimentos adicionados. Eficiência média: ${tripMetrics.averageEfficiency} km/l.`);
     onCancel();
   };
 
@@ -188,15 +194,16 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                 onChange={handleInitialMileageChange}
                 className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 required
+                min={0}
             />
         </div>
       </Card>
 
       <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
         {tripRecords.map((record, index) => {
-          const efficiency = calculateEfficiency(index, tripRecords, initialMileage);
           const previousMileage = index === 0 ? initialMileage : tripRecords[index - 1].mileage;
           const distance = record.mileage - previousMileage;
+          const efficiency = calculateEfficiency(distance, record.volumeLiters);
           
           return (
             <Card key={index} className="dark:bg-gray-800 dark:border-gray-700 relative p-4">
@@ -336,8 +343,32 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
         <Plus className="w-4 h-4 mr-2" />
         Adicionar Outro Abastecimento
       </Button>
+      
+      {/* Resumo da Viagem */}
+      {tripMetrics.totalDistance > 0 && (
+        <Card className="dark:bg-gray-800 dark:border-gray-700 p-4 border-l-4 border-blue-500">
+            <CardTitle className="text-base mb-2 dark:text-white flex items-center space-x-2">
+                <TrendingUp className="w-4 h-4 text-blue-500" />
+                <span>Resumo da Viagem</span>
+            </CardTitle>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+                <p className="text-gray-500 dark:text-gray-400">Distância Total:</p>
+                <p className="font-semibold text-right dark:text-white">{tripMetrics.totalDistance.toLocaleString('pt-BR')} km</p>
+                
+                <p className="text-gray-500 dark:text-gray-400">Custo Total:</p>
+                <p className="font-semibold text-right dark:text-white">
+                    {tripMetrics.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
+                
+                <p className="text-gray-500 dark:text-gray-400 font-bold">Eficiência Média:</p>
+                <p className="font-bold text-right text-blue-600 dark:text-blue-400">
+                    {tripMetrics.averageEfficiency !== null ? `${tripMetrics.averageEfficiency} km/l` : 'N/A'}
+                </p>
+            </div>
+        </Card>
+      )}
 
-      <Button type="submit" className="mt-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
+      <Button type="submit" className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
         Registrar Viagem ({tripRecords.length} Abastecimentos)
       </Button>
     </form>
