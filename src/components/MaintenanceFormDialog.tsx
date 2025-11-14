@@ -6,18 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MaintenanceRecord } from '@/types/maintenance';
-import { Wrench, AlertTriangle, Clock, Gauge, Car } from 'lucide-react';
+import { Wrench, AlertTriangle, Clock, Gauge, Car, Loader2 } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useVehicle } from '@/hooks/useVehicle';
 import { cn } from '@/lib/utils';
-import { MaintenanceAlert } from '@/types/alert'; // Importando MaintenanceAlert
+import { MaintenanceAlert } from '@/types/alert'; 
+import { useServiceTypes } from '@/hooks/useServiceTypes'; // Importando hook de tipos de serviço
 
 interface MaintenanceFormDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   recordToEdit: MaintenanceRecord | null;
-  alertToCreateFrom: MaintenanceAlert | null; // Novo prop
+  alertToCreateFrom: MaintenanceAlert | null; 
   onSubmit: (data: Omit<MaintenanceRecord, 'id'>) => void;
   currentMileage: number;
 }
@@ -31,34 +32,43 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   isOpen,
   onOpenChange,
   recordToEdit,
-  alertToCreateFrom, // Recebendo o alerta
+  alertToCreateFrom, 
   onSubmit,
   currentMileage,
 }) => {
-  // Corrigido: useVehicle retorna apenas 'vehicle', não 'vehicles'
   const { vehicle: activeVehicle } = useVehicle(); 
+  const { allServiceTypes, isLoading: isLoadingServiceTypes } = useServiceTypes(); // Tipos de serviço dinâmicos
+  
   const isEditing = !!recordToEdit;
   const title = isEditing ? 'Editar Manutenção' : 'Adicionar Nova Manutenção';
-  // Como só suportamos um veículo, esta variável é sempre falsa
   const hasMultipleVehicles = false; 
 
-  // Estado inicial padrão
-  const initialFormData: FormDataState = {
+  // 1. Determinar o tipo padrão seguro
+  const defaultType = React.useMemo(() => {
+      // Se os tipos de serviço carregaram, use o primeiro, senão use 'Outro' como fallback
+      return allServiceTypes.length > 0 ? allServiceTypes[0] : 'Outro';
+  }, [allServiceTypes]);
+
+  // 2. Função para gerar o estado inicial
+  const getInitialFormData = React.useCallback((type: string, customType: string = ''): FormDataState => ({
     date: new Date().toISOString().split('T')[0],
     mileage: currentMileage,
-    type: 'Troca de Óleo',
-    customType: '',
+    type: type as FormDataState['type'],
+    customType: customType,
     description: '',
     cost: 0,
     status: 'Concluído',
     nextMileageInterval: undefined,
     nextDate: undefined,
     vehicleId: activeVehicle.id,
-  };
+  }), [currentMileage, activeVehicle.id]);
 
-  const [formData, setFormData] = React.useState<FormDataState>(initialFormData);
+
+  const [formData, setFormData] = React.useState<FormDataState>(getInitialFormData(defaultType));
 
   React.useEffect(() => {
+    if (!isOpen) return;
+    
     if (recordToEdit) {
       // Modo Edição
       setFormData({
@@ -77,29 +87,24 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         // Modo Criação a partir de Alerta de Repetição
         const isKmAlert = alertToCreateFrom.unit === 'km';
         
+        // O tipo do alerta pode ser um tipo personalizado, então usamos ele
+        const alertType = alertToCreateFrom.type;
+        
         setFormData({
-            ...initialFormData,
-            // Preenche o tipo e o KM atual
-            type: alertToCreateFrom.type as FormDataState['type'],
-            customType: alertToCreateFrom.type, // Usamos o nome do alerta como customType por segurança
+            ...getInitialFormData(alertType, alertType), // Passamos o tipo do alerta como customType também, para garantir que seja exibido se for um tipo não padrão.
+            type: alertType as FormDataState['type'],
             mileage: currentMileage,
-            description: `Registro de manutenção acionado pelo alerta de repetição: ${alertToCreateFrom.type}.`,
-            status: 'Concluído', // Ao criar a partir de um alerta, geralmente é para concluir o serviço
+            description: `Registro de manutenção acionado pelo alerta de repetição: ${alertType}.`,
+            status: 'Concluído', 
             
-            // Se for alerta de KM, preenche o intervalo para o próximo
             nextMileageInterval: isKmAlert ? (alertToCreateFrom.nextTarget as number) - currentMileage : undefined,
-            // Se for alerta de Data, preenche a próxima data
             nextDate: !isKmAlert ? (alertToCreateFrom.nextTarget as string) : undefined,
         });
     } else {
       // Modo Criação Padrão
-      setFormData({
-        ...initialFormData,
-        mileage: currentMileage,
-        vehicleId: activeVehicle.id,
-      });
+      setFormData(getInitialFormData(defaultType));
     }
-  }, [recordToEdit, isOpen, currentMileage, activeVehicle.id, alertToCreateFrom]);
+  }, [recordToEdit, isOpen, currentMileage, activeVehicle.id, alertToCreateFrom, defaultType, getInitialFormData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -119,8 +124,10 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     setFormData(prev => ({
       ...prev,
       [id]: value,
-      // Limpa customType se o tipo não for 'Outro'
+      // Se o tipo selecionado for 'Outro', mantemos o customType anterior.
+      // Se for qualquer outro tipo (incluindo os personalizados), limpamos o customType.
       customType: value !== 'Outro' ? '' : prev.customType,
+      type: value as FormDataState['type'],
     }));
   };
 
@@ -150,12 +157,16 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         return;
     }
     
-    // 4. Preparar dados para submissão (incluindo o KM alvo calculado)
+    // 4. Preparar dados para submissão
     const dataToSubmit: Omit<MaintenanceRecord, 'id'> = {
         ...formData,
-        nextMileage: finalNextMileage, // KM alvo calculado
-        nextMileageInterval: formData.nextMileageInterval, // Mantém o intervalo para referência
-        vehicleId: activeVehicle.id, // Garante que o ID do veículo seja enviado
+        // O campo 'type' no DB recebe o valor selecionado (seja ele um tipo customizado ou 'Outro').
+        // O campo 'customType' só é preenchido se 'type' for 'Outro'.
+        type: formData.type, 
+        customType: formData.type === 'Outro' ? formData.customType : undefined, 
+        nextMileage: finalNextMileage, 
+        nextMileageInterval: formData.nextMileageInterval, 
+        vehicleId: activeVehicle.id, 
     };
 
     onSubmit(dataToSubmit);
@@ -235,14 +246,21 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
               <Select
                 value={formData.type}
                 onValueChange={(value) => handleSelectChange('type', value)}
+                disabled={isLoadingServiceTypes}
               >
                 <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                  {['Troca de Óleo', 'Revisão', 'Pneus', 'Freios', 'Outro'].map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
+                  {isLoadingServiceTypes ? (
+                    <SelectItem value="loading" disabled>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2 inline" /> Carregando tipos...
+                    </SelectItem>
+                  ) : (
+                    allServiceTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
