@@ -1,56 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useVehicle, VehicleData } from '@/hooks/useVehicle';
-import { showSuccess, showError } from '@/utils/toast';
-import { Loader2 } from 'lucide-react';
+import { showError } from '@/utils/toast';
+import { Loader2, Car, PlusCircle, Trash2 } from 'lucide-react';
+import VehicleForm from '@/components/VehicleForm'; // Importando o novo componente
 
-// Tipo para o estado local do formulário (apenas campos editáveis)
-type VehicleFormState = Omit<VehicleData, 'id'>;
+type Mode = 'edit' | 'add';
 
 const VehicleSettings: React.FC = () => {
-  const { vehicle, updateVehicle, removeVehicle, isLoading, isMutating } = useVehicle();
+  const { vehicle: activeVehicle, updateVehicle, removeVehicle, isLoading, isMutating, vehicles } = useVehicle();
   
-  const [formData, setFormData] = useState<VehicleFormState>({
-    model: vehicle.model,
-    year: vehicle.year,
-    plate: vehicle.plate,
-  });
+  // Se não houver veículo ativo, forçamos o modo 'add'
+  const initialMode: Mode = activeVehicle.id === '' ? 'add' : 'edit';
+  const [mode, setMode] = useState<Mode>(initialMode);
 
   useEffect(() => {
-    // Atualiza o formulário quando os dados do veículo mudam (ex: após o carregamento inicial)
-    setFormData({
-      model: vehicle.model,
-      year: vehicle.year,
-      plate: vehicle.plate,
-    });
-  }, [vehicle]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    
-    if (id === 'year') {
-      setFormData(prev => ({ ...prev, year: parseInt(value) || 0 }));
-    } else {
-      setFormData(prev => ({ ...prev, [id]: value }));
+    // Se o veículo ativo mudar (ex: após a criação), voltamos para o modo 'edit'
+    if (activeVehicle.id !== '' && mode === 'add') {
+        setMode('edit');
     }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.model || !formData.plate || formData.year <= 1900) {
-        showError("Por favor, preencha todos os campos obrigatórios do veículo.");
-        return;
+    // Se o veículo ativo for removido e a lista ficar vazia, forçamos 'add'
+    if (activeVehicle.id === '' && vehicles.length === 0) {
+        setMode('add');
     }
-
-    // O hook useVehicle agora lida com a persistência
-    updateVehicle(formData);
-  };
+  }, [activeVehicle.id, vehicles.length]);
   
+  const handleUpdateVehicle = useCallback(async (data: Omit<VehicleData, 'id'>) => {
+    // Se estiver no modo 'add', o vehicleId será undefined, resultando em INSERT no hook
+    // Se estiver no modo 'edit', o hook usa o activeVehicle.id para UPDATE
+    await updateVehicle(data);
+    // O useEffect acima deve capturar a mudança e reverter para 'edit' se for uma criação bem-sucedida.
+  }, [updateVehicle]);
+
   const handleRemoveVehicle = () => {
     if (window.confirm('Tem certeza que deseja remover este veículo? Esta ação é permanente e removerá todos os registros de manutenção e abastecimento associados.')) {
         removeVehicle();
@@ -66,82 +49,62 @@ const VehicleSettings: React.FC = () => {
     );
   }
 
+  const isEditingActive = mode === 'edit' && activeVehicle.id !== '';
+  const isAddingNew = mode === 'add';
+
   return (
     <Card className="shadow-none border-none dark:bg-transparent">
       <CardHeader className="px-0 pt-0">
         <CardTitle className="text-2xl dark:text-white">Configurações do Veículo</CardTitle>
         <CardDescription className="dark:text-gray-400">
-          Gerencie os detalhes do seu veículo principal.
+          Gerencie os detalhes do seu veículo principal e adicione novos veículos.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 px-0">
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="model">Modelo</Label>
-                <Input 
-                    id="model" 
-                    value={formData.model} 
-                    onChange={handleChange} 
-                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
-                    required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="year">Ano</Label>
-                <Input 
-                    id="year" 
-                    type="number" 
-                    value={formData.year} 
-                    onChange={handleChange} 
-                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
-                    required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="plate">Placa</Label>
-                <Input 
-                    id="plate" 
-                    value={formData.plate} 
-                    onChange={handleChange} 
-                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
-                    required
-                />
-              </div>
-              {/* Campo de KM removido, pois é gerenciado pelo useMileageRecords */}
-              <div className="space-y-2">
-                <Label htmlFor="currentMileage">Quilometragem Atual (km)</Label>
-                <Input 
-                    id="currentMileage" 
-                    type="text" 
-                    value="Atualizado no Dashboard" 
-                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
-                    disabled
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                    A quilometragem é atualizada automaticamente via Dashboard ou registros de abastecimento.
-                </p>
-              </div>
-            </div>
+        
+        {/* Botões de Modo */}
+        <div className="flex space-x-4">
+            {activeVehicle.id !== '' && (
+                <Button 
+                    variant={isEditingActive ? 'default' : 'outline'}
+                    onClick={() => setMode('edit')}
+                    className={isEditingActive ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'dark:hover:bg-gray-700'}
+                    disabled={isMutating}
+                >
+                    <Car className="w-4 h-4 mr-2" />
+                    Editar Veículo Ativo
+                </Button>
+            )}
             <Button 
-                type="submit" 
-                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                variant={isAddingNew ? 'default' : 'outline'}
+                onClick={() => setMode('add')}
+                className={isAddingNew ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'dark:hover:bg-gray-700'}
                 disabled={isMutating}
             >
-              {isMutating ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                'Salvar Detalhes do Veículo'
-              )}
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Adicionar Novo
             </Button>
-        </form>
+        </div>
         
-        {vehicle.id !== '' && (
-            <>
+        <Separator className="dark:bg-gray-700" />
+
+        {/* Formulário de Edição */}
+        {isEditingActive && (
+            <div className="space-y-4">
+                <h3 className="text-xl font-semibold dark:text-white">
+                    Editando: {activeVehicle.model} ({activeVehicle.plate})
+                </h3>
+                <VehicleForm
+                    initialData={activeVehicle}
+                    isMutating={isMutating}
+                    onSubmit={handleUpdateVehicle}
+                    isNew={false}
+                />
+                
                 <Separator className="dark:bg-gray-700" />
         
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold dark:text-white">Remover Veículo</h3>
+                  <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">Remover Veículo</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Esta ação é permanente e removerá todos os registros de manutenção e abastecimento associados a este veículo.
                   </p>
@@ -153,12 +116,31 @@ const VehicleSettings: React.FC = () => {
                     {isMutating ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
-                        'Remover Veículo'
+                        <>
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Remover Veículo
+                        </>
                     )}
                   </Button>
                 </div>
-            </>
+            </div>
         )}
+        
+        {/* Formulário de Adição */}
+        {isAddingNew && (
+            <div className="space-y-4">
+                <h3 className="text-xl font-semibold dark:text-white">
+                    {activeVehicle.id === '' ? 'Cadastrar Primeiro Veículo' : 'Adicionar Novo Veículo'}
+                </h3>
+                <VehicleForm
+                    initialData={undefined} // Passa undefined para resetar o formulário
+                    isMutating={isMutating}
+                    onSubmit={handleUpdateVehicle}
+                    isNew={true}
+                />
+            </div>
+        )}
+        
       </CardContent>
     </Card>
   );
