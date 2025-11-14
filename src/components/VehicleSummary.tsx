@@ -7,15 +7,20 @@ import { useVehicle } from '@/hooks/useVehicle';
 
 interface VehicleSummaryProps {
   currentMileage: number;
+  lastServiceDate: string | null; // Nova prop
 }
 
-const VehicleSummary: React.FC<VehicleSummaryProps> = ({ currentMileage }) => {
+const VehicleSummary: React.FC<VehicleSummaryProps> = ({ currentMileage, lastServiceDate }) => {
   const navigate = useNavigate();
   const { vehicle } = useVehicle();
 
   const handleEditClick = () => {
     navigate('/settings/vehicle');
   };
+  
+  const formattedLastService = lastServiceDate 
+    ? new Date(lastServiceDate).toLocaleDateString('pt-BR')
+    : 'N/A';
 
   return (
     <Card className="col-span-full lg:col-span-2 dark:bg-gray-800 dark:border-gray-700">
@@ -48,7 +53,7 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ currentMileage }) => {
         <div className="md:col-span-3">
           <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
             <Calendar className="w-4 h-4 mr-2" />
-            Última manutenção registrada: {vehicle.lastService}
+            Última manutenção registrada: {formattedLastService}
           </p>
         </div>
       </CardContent>

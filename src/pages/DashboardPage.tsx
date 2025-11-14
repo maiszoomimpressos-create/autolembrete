@@ -12,6 +12,7 @@ import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
 import { useMaintenanceMetrics } from '@/hooks/useMaintenanceMetrics';
 import { useMileageAlerts } from '@/hooks/useMileageAlerts';
 import { useMileageRecords } from '@/hooks/useMileageRecords';
+import { useLastMaintenanceDate } from '@/hooks/useLastMaintenanceDate'; // Novo Import
 
 const DashboardPage: React.FC = () => {
   // Dados de Abastecimento
@@ -24,6 +25,7 @@ const DashboardPage: React.FC = () => {
   // Dados de Manutenção
   const { records: maintenanceRecords } = useMaintenanceRecords();
   const { totalCost, pendingCount, nextMaintenance } = useMaintenanceMetrics(maintenanceRecords);
+  const lastServiceDate = useLastMaintenanceDate(maintenanceRecords); // Usando o novo hook
   
   // Alertas de KM (Agora usa o KM atual do useMileageRecords)
   const { alerts: mileageAlerts } = useMileageAlerts(maintenanceRecords, currentMileage);
@@ -49,7 +51,10 @@ const DashboardPage: React.FC = () => {
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
       
       {/* Resumo do Veículo */}
-      <VehicleSummary currentMileage={currentMileage} />
+      <VehicleSummary 
+        currentMileage={currentMileage} 
+        lastServiceDate={lastServiceDate} // Passando a data real
+      />
 
       {/* Cartões de Métricas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
