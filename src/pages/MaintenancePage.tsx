@@ -11,6 +11,7 @@ import { Plus, OilCan, Car, Check, Pencil, Eye, Disc } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { MaintenanceForm } from '@/components/MaintenanceForm';
 import MaintenanceEditDialog from '@/components/MaintenanceEditDialog';
+import MaintenanceDetailDialog from '@/components/MaintenanceDetailDialog';
 import { format } from 'date-fns';
 
 // Mock type for a maintenance record
@@ -108,7 +109,9 @@ const MaintenancePage: React.FC = () => {
   const [maintenanceList, setMaintenanceList] = useState<MaintenanceRecord[]>(initialMaintenanceData);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [editingMaintenance, setEditingMaintenance] = useState<MaintenanceRecord | null>(null);
+  const [viewingMaintenance, setViewingMaintenance] = useState<MaintenanceRecord | null>(null);
 
   const handleAddMaintenance = (data: any) => {
     const newRecord: MaintenanceRecord = {
@@ -130,6 +133,11 @@ const MaintenancePage: React.FC = () => {
   const handleEditClick = (maintenance: MaintenanceRecord) => {
     setEditingMaintenance(maintenance);
     setIsEditDialogOpen(true);
+  };
+
+  const handleDetailClick = (maintenance: MaintenanceRecord) => {
+    setViewingMaintenance(maintenance);
+    setIsDetailDialogOpen(true);
   };
 
   const handleSaveEdit = (updatedData: MaintenanceRecord) => {
@@ -255,6 +263,7 @@ const MaintenancePage: React.FC = () => {
                         variant="outline"
                         size="sm"
                         className="cursor-pointer whitespace-nowrap !rounded-button dark:text-white dark:border-gray-700 dark:hover:bg-gray-700"
+                        onClick={() => handleDetailClick(maintenance)}
                       >
                         <Eye className="w-4 h-4 mr-1" />
                         Detalhes
@@ -293,6 +302,13 @@ const MaintenancePage: React.FC = () => {
         onOpenChange={setIsEditDialogOpen}
         maintenance={editingMaintenance}
         onSave={handleSaveEdit}
+      />
+      
+      {/* Detail Dialog */}
+      <MaintenanceDetailDialog
+        open={isDetailDialogOpen}
+        onOpenChange={setIsDetailDialogOpen}
+        maintenance={viewingMaintenance}
       />
     </div>
   );
