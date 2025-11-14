@@ -15,6 +15,7 @@ import { useMileageRecords } from '@/hooks/useMileageRecords';
 import { useLastMaintenanceDate } from '@/hooks/useLastMaintenanceDate';
 import { useDateAlerts } from '@/hooks/useDateAlerts';
 import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard';
+import AlertItem from '@/components/AlertItem'; // Novo Import
 import { MaintenanceAlert } from '@/types/alert';
 import { useNavigate } from 'react-router-dom';
 import { MaintenanceRecord } from '@/types/maintenance';
@@ -38,13 +39,12 @@ const DashboardPage: React.FC = () => {
   const { alerts: mileageAlerts } = useMileageAlerts(maintenanceRecords, currentMileage);
   const { alerts: dateAlerts } = useDateAlerts(maintenanceRecords);
 
-  // Determina o alerta de repetição mais urgente (se não houver um registro ativo)
-  const mostUrgentAlert: MaintenanceAlert | null = useMemo(() => {
-    const allAlerts = [...mileageAlerts, ...dateAlerts];
-    if (allAlerts.length === 0) return null;
-
-    // Prioridade: Atrasado (KM) > Atrasado (Data) > Próximo (KM) > Próximo (Data)
-    allAlerts.sort((a, b) => {
+  // Combina e ordena todos os alertas de repetição
+  const allRepetitionAlerts = useMemo(() => {
+    const all = [...mileageAlerts, ...dateAlerts];
+    
+    // Ordenação complexa para priorizar o mais urgente
+    all.sort((a, b) => {
       // 1. Atrasado vs Próximo
       if (a.status === 'Atrasado' && b.status !== 'Atrasado') return -1;
       if (a.status !== 'Atrasado' && b.status === 'Atrasado') return 1;
@@ -57,9 +57,10 @@ const DashboardPage: React.FC = () => {
       if (a.status === 'Atrasado') return b.value - a.value;
       return a.value - b.value;
     });
-
-    return allAlerts[0];
+    return all;
   }, [mileageAlerts, dateAlerts]);
+  
+  const mostUrgentAlert: MaintenanceAlert | null = allRepetitionAlerts.length > 0 ? allRepetitionAlerts[0] : null;
   
   const efficiencyValue = averageEfficiency !== null 
     ? `${averageEfficiency} km/l` 
@@ -78,23 +79,16 @@ const DashboardPage: React.FC = () => {
     : 'Adicione um agendamento';
     
   const handleEditMaintenance = (record: MaintenanceRecord) => {
-    // Navega para a página de manutenção e abre o modal de edição (simulado)
+    // Navega para a página de manutenção e abre o modal de edição
     navigate('/maintenance', { state: { editRecordId: record.id } });
   };
   
   const handleAlertClick = (alert: MaintenanceAlert) => {
-    // Encontra o registro original para edição
-    const originalRecord = maintenanceRecords.find(r => r.id === alert.id.split('-')[0]);
+    // O ID do registro original é a primeira parte do ID do alerta (ex: 'f1-mileage' -> 'f1')
+    const originalRecordId = alert.id.split('-')[0];
     
-    if (originalRecord) {
-        // Se for um alerta de repetição, sugerimos criar um novo registro baseado no antigo
-        // Mas para simplificar, vamos apenas abrir o formulário de edição do registro original
-        // para que o usuário possa criar um novo a partir dele ou marcar como concluído.
-        
-        // Para o propósito de demonstração, vamos apenas navegar para a página de manutenção.
-        // Em uma aplicação real, você passaria o ID para abrir o modal.
-        navigate('/maintenance');
-    }
+    // Navega para a página de manutenção e passa o ID para abrir o modal de edição
+    navigate('/maintenance', { state: { editRecordId: originalRecordId } });
   };
 
 
@@ -154,71 +148,39 @@ const DashboardPage: React.FC = () => {
               <CardHeader className="p-0 mb-4">
                 <CardTitle className="text-xl font-semibold dark:text-white">Alertas e Lembretes</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <ul className="space-y-3 text-sm dark:text-gray-300">
-                  {/* Alerta de KM Atual */}
-                  {currentMileage > 0 && (
-                    <li className="flex items-center text-gray-600 dark:text-gray-400">
-                      <Gauge className="w-4 h-4 mr-2" />
-                      KM Atual Estimado: {currentMileage.toLocaleString('pt-BR')} km
-                    </li>
-                  )}
+              <CardContent className="p-0 space-y-3">
+                {/* Alerta de KM Atual */}
+                {currentMileage > 0 && (
+                  <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
+                    <Gauge className="w-4 h-4 mr-2" />
+                    KM Atual Estimado: {currentMileage.toLocaleString('pt-BR')} km
+                  </div>
+                )}
 
-                  {/* Alertas de Manutenção Pendente (Status) */}
-                  {pendingCount > 0 && (
-                    <li className="flex items-center text-red-500 font-semibold">
-                      <AlertTriangle className="w-4 h-4 mr-2" />
-                      Você tem {pendingCount} manutenções pendentes (status).
-                    </li>
-                  )}
+                {/* Alertas de Manutenção Pendente (Status) */}
+                {pendingCount > 0 && (
+                  <button 
+                    onClick={() => navigate('/maintenance')}
+                    className="w-full flex items-center p-3 rounded-lg border border-red-200 bg-red-50/50 text-red-600 font-semibold transition-colors hover:shadow-md dark:bg-red-900/10 dark:border-red-900 dark:text-red-400"
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
+                    Você tem {pendingCount} manutenções pendentes (status).
+                    <ChevronRight className="w-4 h-4 ml-auto" />
+                  </button>
+                )}
 
-                  {/* Alertas de KM */}
-                  {mileageAlerts.map(alert => (
-                    <li 
-                      key={alert.id} 
-                      className={`flex items-center ${alert.status === 'Atrasado' ? 'text-red-600' : 'text-yellow-600'}`}
-                    >
-                      <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span className="truncate">
-                        {alert.type}: {alert.status === 'Atrasado' 
-                          ? `Atrasado por ${alert.value.toLocaleString('pt-BR')} km` 
-                          : `Próximo em ${alert.value.toLocaleString('pt-BR')} km`}
-                      </span>
-                    </li>
-                  ))}
-                  
-                  {/* Alertas de Data */}
-                  {dateAlerts.map(alert => (
-                    <li 
-                      key={alert.id} 
-                      className={`flex items-center ${alert.status === 'Atrasado' ? 'text-red-600' : 'text-yellow-600'}`}
-                    >
-                      <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span className="truncate">
-                        {alert.type}: {alert.status === 'Atrasado' 
-                          ? `Vencido há ${alert.value} dias (Data: ${new Date(alert.nextTarget as string).toLocaleDateString('pt-BR')})` 
-                          : `Vence em ${alert.value} dias (Data: ${new Date(alert.nextTarget as string).toLocaleDateString('pt-BR')})`}
-                      </span>
-                    </li>
-                  ))}
-
-
-                  {/* Alerta de Próxima Manutenção (Data) */}
-                  {nextMaintenance && (
-                    <li className="flex items-center text-yellow-500">
-                      <Clock className="w-4 h-4 mr-2" />
-                      Próxima Manutenção Agendada: {nextMaintenance.type}
-                    </li>
-                  )}
-                  
-                  {/* Placeholder de sucesso */}
-                  {pendingCount === 0 && mileageAlerts.length === 0 && dateAlerts.length === 0 && !nextMaintenance && (
-                    <li className="flex items-center text-green-500">
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Seu veículo está em dia!
-                    </li>
-                  )}
-                </ul>
+                {/* Alertas de Repetição (KM e Data) */}
+                {allRepetitionAlerts.map(alert => (
+                  <AlertItem key={alert.id} alert={alert} onClick={handleAlertClick} />
+                ))}
+                
+                {/* Placeholder de sucesso */}
+                {pendingCount === 0 && allRepetitionAlerts.length === 0 && !nextMaintenance && (
+                  <div className="flex items-center text-green-500 p-3 border border-green-200 bg-green-50/50 rounded-lg dark:bg-green-900/10 dark:border-green-900">
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Seu veículo está em dia!
+                  </div>
+                )}
               </CardContent>
             </Card>
         </div>
