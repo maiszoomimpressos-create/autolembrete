@@ -6,9 +6,13 @@ import MaintenanceFormDialog from '@/components/MaintenanceFormDialog';
 import { MaintenanceRecord } from '@/types/maintenance';
 import { showSuccess, showError } from '@/utils/toast';
 import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
+import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard'; // Novo Import
+import { useUpcomingMaintenance } from '@/hooks/useUpcomingMaintenance'; // Novo Import
 
 const MaintenancePage: React.FC = () => {
   const { records, addOrUpdateRecord, deleteRecord } = useMaintenanceRecords();
+  const upcomingRecord = useUpcomingMaintenance(records); // Usando o novo hook
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MaintenanceRecord | null>(null);
 
@@ -56,6 +60,19 @@ const MaintenancePage: React.FC = () => {
           <PlusCircle className="w-4 h-4 mr-2" />
           Adicionar Manutenção
         </Button>
+      </div>
+
+      {/* Cartão de Próxima Manutenção */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-1">
+          <UpcomingMaintenanceCard record={upcomingRecord} onEdit={handleEdit} />
+        </div>
+        {/* Placeholder para outras métricas ou filtros */}
+        <div className="md:col-span-2 flex items-center justify-center bg-gray-50 border border-dashed rounded-lg dark:bg-gray-800 dark:border-gray-700 p-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+                Espaço para filtros ou estatísticas rápidas de manutenção.
+            </p>
+        </div>
       </div>
 
       <MaintenanceTable records={records} onEdit={handleEdit} onDelete={handleDelete} />
