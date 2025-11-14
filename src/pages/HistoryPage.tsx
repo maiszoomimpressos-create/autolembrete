@@ -236,7 +236,7 @@ const HistoryPage: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Troca de Pastilhas de Freio</h4>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white}>Troca de Pastilhas de Freio</h4>
                       <span className="text-sm text-gray-500 dark:text-gray-400">10/06/2024</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-sm dark:text-gray-300">
