@@ -3,11 +3,12 @@ import { Map, Fuel, Loader2, LocateFixed, TrendingDown, TrendingUp, DollarSign, 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label'; // Importação adicionada
+import { Label } from '@/components/ui/label';
 import { showError } from '@/utils/toast';
 import { useNearbyStationsQuery, NearbyStation } from '@/hooks/useNearbyStations';
 import { FuelingRecord } from '@/types/fueling';
 import { Badge } from '@/components/ui/badge';
+import NearbyStationsMap from '@/components/NearbyStationsMap'; // Importação do mapa
 
 // Tipos de combustível disponíveis
 const FUEL_TYPES: FuelingRecord['fuelType'][] = ['Gasolina Comum', 'Gasolina Aditivada', 'Etanol', 'Diesel'];
@@ -235,6 +236,22 @@ const PriceComparisonPage: React.FC = () => {
         </CardContent>
       </Card>
       
+      {/* Mapa de Postos Próximos */}
+      {userLocation && (
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader>
+                <CardTitle className="text-xl dark:text-white">Visualização no Mapa</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <NearbyStationsMap 
+                    stations={nearbyStations} 
+                    userLocation={userLocation} 
+                    isLoading={isLoadingStations}
+                />
+            </CardContent>
+        </Card>
+      )}
+
       {/* Lista de Postos Próximos */}
       <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
