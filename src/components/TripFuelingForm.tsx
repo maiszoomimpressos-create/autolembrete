@@ -93,6 +93,13 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
   const calculateTotalCost = (liters: number, costPerL: number) => {
     return parseFloat((liters * costPerL).toFixed(2));
   };
+  
+  const calculateCostPerLiter = (totalCost: number, liters: number) => {
+    if (liters > 0) {
+      return parseFloat((totalCost / liters).toFixed(2));
+    }
+    return 0;
+  };
 
   const handleChange = (index: number, id: keyof TripRecord, value: string | number) => {
     setTripRecords(prev => {
@@ -113,9 +120,7 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
         const liters = record.volumeLiters;
         
         record.totalCost = total;
-        if (liters > 0) {
-          record.costPerLiter = parseFloat((total / liters).toFixed(2));
-        }
+        record.costPerLiter = calculateCostPerLiter(total, liters);
       } else if (id === 'fuelType' || id === 'station' || id === 'date') {
         (record as any)[id] = value;
       }

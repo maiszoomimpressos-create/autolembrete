@@ -58,6 +58,13 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
   const calculateTotalCost = (liters: number, costPerL: number) => {
     return parseFloat((liters * costPerL).toFixed(2));
   };
+  
+  const calculateCostPerLiter = (totalCost: number, liters: number) => {
+    if (liters > 0) {
+      return parseFloat((totalCost / liters).toFixed(2));
+    }
+    return 0;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -80,9 +87,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
         const liters = prev.volumeLiters;
         
         newFormData.totalCost = total;
-        if (liters > 0) {
-          newFormData.costPerLiter = parseFloat((total / liters).toFixed(2));
-        }
+        newFormData.costPerLiter = calculateCostPerLiter(total, liters);
       }
 
       return newFormData;
