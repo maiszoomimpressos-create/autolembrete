@@ -2,19 +2,24 @@ import { useMemo } from 'react';
 import { useServiceTypesQuery, ServiceType } from '@/integrations/supabase/serviceTypes';
 import { MaintenanceRecord } from '@/types/maintenance';
 
-// Tipos de serviço padrão removidos. Agora, a lista é baseada apenas nos tipos personalizados.
-const DEFAULT_SERVICE_TYPES: MaintenanceRecord['type'][] = [];
+// Tipos de serviço comuns que devem estar sempre disponíveis
+const COMMON_SERVICE_TYPES: MaintenanceRecord['type'][] = [
+    'Troca de Óleo', 
+    'Revisão Geral', 
+    'Pneus', 
+    'Freios',
+];
 
 export const useServiceTypes = () => {
     const { data: customTypes = [], isLoading, error } = useServiceTypesQuery();
 
     const baseServiceTypes = useMemo(() => {
-        // A lista base agora é composta apenas pelos tipos personalizados
-        const types: string[] = [];
+        const types = [...COMMON_SERVICE_TYPES];
         
+        // Adiciona tipos personalizados, evitando duplicatas
         customTypes.forEach(type => {
-            if (!types.includes(type.name)) {
-                types.push(type.name);
+            if (!types.includes(type.name as MaintenanceRecord['type'])) {
+                types.push(type.name as MaintenanceRecord['type']);
             }
         });
         
@@ -27,8 +32,8 @@ export const useServiceTypes = () => {
     }, [baseServiceTypes]);
 
     return {
-        baseServiceTypes, // Tipos personalizados (sem 'Outro')
-        allServiceTypes: allServiceTypesWithOther, // Tipos personalizados + 'Outro'
+        baseServiceTypes, // Tipos comuns + personalizados (sem 'Outro')
+        allServiceTypes: allServiceTypesWithOther, // Tipos comuns + personalizados + 'Outro'
         isLoading,
         error,
         customTypes,
