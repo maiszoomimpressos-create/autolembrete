@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 import AppLayout from "./components/AppLayout";
 import ThemeProvider from "./components/ThemeProvider";
 import SessionContextProvider from "./components/SessionContextProvider";
-import ProtectedRoute from "./components/ProtectedRoute"; // Novo Import
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -40,9 +40,11 @@ const App = () => (
               </Route>
               
               {/* Rota de Admin Master (Protegida e restrita a administradores) */}
+              {/* Esta rota precisa do AppLayout, mas o MasterAdminPage gerencia suas próprias sub-rotas */}
               <Route path="/" element={<ProtectedRoute adminOnly={true} />}>
                 <Route path="/" element={<AppLayout />}>
-                    <Route path="master-admin" element={<MasterAdminPage />} />
+                    {/* Usamos /* para indicar que MasterAdminPage gerencia rotas aninhadas */}
+                    <Route path="master-admin/*" element={<MasterAdminPage />} /> 
                 </Route>
               </Route>
               
