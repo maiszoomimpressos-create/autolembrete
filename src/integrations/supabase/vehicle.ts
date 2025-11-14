@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/components/SessionContextProvider';
 import { showError, showSuccess } from '@/utils/toast';
 
-const VEHICLE_KEY = 'vehicles'; // Alterado para plural
+const VEHICLE_KEY = 'vehicle';
 
 // --- Helpers de Conversão ---
 
@@ -24,32 +24,31 @@ const toDbInsert = (record: Omit<VehicleData, 'id'>, userId: string): VehicleDat
 
 // --- Funções de Busca ---
 
-// Agora busca TODOS os veículos do usuário
-const fetchVehicles = async (userId: string): Promise<VehicleData[]> => {
+const fetchVehicle = async (userId: string): Promise<VehicleData | null> => {
   const { data, error } = await supabase
     .from('vehicles')
     .select('*')
     .eq('user_id', userId)
-    .order('created_at', { ascending: true }); // Ordena pelo mais antigo primeiro
+    .single();
 
-  if (error) {
+  if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
     throw new Error(error.message);
   }
   
-  return data ? data.map(fromDb) : [];
+  return data ? fromDb(data) : null;
 };
 
 // --- Hooks de Query e Mutação ---
 
-export const useVehiclesQuery = () => { // Renomeado para plural
+export const useVehicleQuery = () => {
   const { user } = useSession();
   const userId = user?.id;
 
-  return useQuery<VehicleData[], Error>({
+  return useQuery<VehicleData | null, Error>({
     queryKey: [VEHICLE_KEY, userId],
     queryFn: () => {
-      if (!userId) return Promise.resolve([]);
-      return fetchVehicles(userId);
+      if (!userId) return Promise.resolve(null);
+      return fetchVehicle(userId);
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 60, // 1 hour
@@ -63,10 +62,6 @@ export const useVehicleMutations = () => {
 
   const invalidateQuery = () => {
     queryClient.invalidateQueries({ queryKey: [VEHICLE_KEY, userId] });
-    // Invalida outras queries que dependem do veículo (KM, manutenção, etc.)
-    queryClient.invalidateQueries({ queryKey: ['mileage_records', userId] });
-    queryClient.invalidateQueries({ queryKey: ['fueling_records', userId] });
-    queryClient.invalidateQueries({ queryKey: ['maintenance_records', userId] });
   };
 
   const upsertVehicleMutation = useMutation<VehicleData, Error, Omit<VehicleData, 'id'> & { vehicleId?: string }>({
@@ -75,8 +70,8 @@ export const useVehicleMutations = () => {
       
       const dbRecord = toDbInsert(record, userId);
       
+      // Se tiver um ID, atualiza. Se não, insere (ou usa upsert se fosse mais complexo)
       if (record.vehicleId) {
-        // Atualização
         const { data, error } = await supabase
           .from('vehicles')
           .update(dbRecord)
@@ -87,7 +82,7 @@ export const useVehicleMutations = () => {
         if (error) throw new Error(error.message);
         return fromDb(data);
       } else {
-        // Inserção
+        // Tenta inserir. Se falhar devido à restrição UNIQUE (user_id), o usuário já tem um veículo.
         const { data, error } = await supabase
           .from('vehicles')
           .insert(dbRecord)

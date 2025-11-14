@@ -3,7 +3,6 @@ import { MaintenanceRecord, MaintenanceRecordInsert } from '@/types/maintenance'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/components/SessionContextProvider';
 import { showError } from '@/utils/toast';
-import { useVehicle } from '@/hooks/useVehicle'; // Importando useVehicle
 
 const MAINTENANCE_RECORDS_KEY = 'maintenance_records';
 
@@ -22,13 +21,11 @@ const fromDb = (record: any): MaintenanceRecord => ({
   nextMileage: record.next_mileage,
   nextMileageInterval: record.next_mileage_interval,
   nextDate: record.next_date,
-  vehicleId: record.vehicle_id, // Novo campo
 });
 
 // Converte do formato do Frontend (camelCase) para o formato de Inserção/Atualização do DB (snake_case)
-const toDbInsert = (record: Omit<MaintenanceRecord, 'id'>, userId: string, vehicleId: string): MaintenanceRecordInsert => ({
+const toDbInsert = (record: Omit<MaintenanceRecord, 'id'>, userId: string): MaintenanceRecordInsert => ({
   user_id: userId,
-  vehicle_id: vehicleId, // Novo campo
   date: record.date,
   mileage: record.mileage,
   type: record.type,
@@ -43,12 +40,11 @@ const toDbInsert = (record: Omit<MaintenanceRecord, 'id'>, userId: string, vehic
 
 // --- Funções de Busca ---
 
-const fetchMaintenanceRecords = async (userId: string, vehicleId: string): Promise<MaintenanceRecord[]> => {
+const fetchMaintenanceRecords = async (userId: string): Promise<MaintenanceRecord[]> => {
   const { data, error } = await supabase
     .from('maintenance_records')
     .select('*')
     .eq('user_id', userId)
-    .eq('vehicle_id', vehicleId) // Filtrando por veículo
     .order('date', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -62,17 +58,15 @@ const fetchMaintenanceRecords = async (userId: string, vehicleId: string): Promi
 
 export const useMaintenanceRecordsQuery = () => {
   const { user } = useSession();
-  const { vehicle } = useVehicle(); // Obtém o veículo ativo
   const userId = user?.id;
-  const vehicleId = vehicle.id;
 
   return useQuery<MaintenanceRecord[], Error>({
-    queryKey: [MAINTENANCE_RECORDS_KEY, userId, vehicleId], // Adiciona vehicleId à chave
+    queryKey: [MAINTENANCE_RECORDS_KEY, userId],
     queryFn: () => {
-      if (!userId || !vehicleId) return Promise.resolve([]);
-      return fetchMaintenanceRecords(userId, vehicleId);
+      if (!userId) return Promise.resolve([]);
+      return fetchMaintenanceRecords(userId);
     },
-    enabled: !!userId && !!vehicleId,
+    enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
@@ -80,18 +74,16 @@ export const useMaintenanceRecordsQuery = () => {
 export const useMaintenanceMutations = () => {
   const queryClient = useQueryClient();
   const { user } = useSession();
-  const { vehicle } = useVehicle(); // Obtém o veículo ativo
   const userId = user?.id;
-  const vehicleId = vehicle.id;
 
   const invalidateQuery = () => {
-    queryClient.invalidateQueries({ queryKey: [MAINTENANCE_RECORDS_KEY, userId, vehicleId] });
+    queryClient.invalidateQueries({ queryKey: [MAINTENANCE_RECORDS_KEY, userId] });
   };
 
   const addRecordMutation = useMutation<MaintenanceRecord, Error, Omit<MaintenanceRecord, 'id'>>({
     mutationFn: async (record) => {
-      if (!userId || !vehicleId) throw new Error('User or Vehicle not authenticated/selected.');
-      const dbRecord = toDbInsert(record, userId, vehicleId);
+      if (!userId) throw new Error('User not authenticated.');
+      const dbRecord = toDbInsert(record, userId);
       
       const { data, error } = await supabase
         .from('maintenance_records')
@@ -108,12 +100,8 @@ export const useMaintenanceMutations = () => {
 
   const updateRecordMutation = useMutation<MaintenanceRecord, Error, MaintenanceRecord>({
     mutationFn: async (record) => {
-      if (!userId || !vehicleId) throw new Error('User or Vehicle not authenticated/selected.');
-      
-      const dbRecord = {
-          ...toDbInsert(record, userId, vehicleId),
-          vehicle_id: vehicleId, // Garante que o vehicle_id está no update payload
-      };
+      if (!userId) throw new Error('User not authenticated.');
+      const dbRecord = toDbInsert(record, userId);
       
       const { data, error } = await supabase
         .from('maintenance_records')
@@ -131,14 +119,13 @@ export const useMaintenanceMutations = () => {
 
   const deleteRecordMutation = useMutation<void, Error, string>({
     mutationFn: async (id) => {
-      if (!userId || !vehicleId) throw new Error('User or Vehicle not authenticated/selected.');
+      if (!userId) throw new Error('User not authenticated.');
       
       const { error } = await supabase
         .from('maintenance_records')
         .delete()
         .eq('id', id)
-        .eq('user_id', userId)
-        .eq('vehicle_id', vehicleId); // Segurança extra
+        .eq('user_id', userId); // RLS já garante isso, mas é bom para segurança extra
 
       if (error) throw new Error(error.message);
     },

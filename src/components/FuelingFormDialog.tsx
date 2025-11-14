@@ -6,10 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FuelingRecord } from '@/types/fueling';
-import { Fuel, Car, Check } from 'lucide-react';
+import { Fuel, Car } from 'lucide-react';
 import TripFuelingForm from './TripFuelingForm';
-import { useVehicle } from '@/hooks/useVehicle';
-import { cn } from '@/lib/utils';
 
 interface FuelingFormDialogProps {
   isOpen: boolean;
@@ -24,10 +22,8 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
   recordToEdit,
   onSubmit,
 }) => {
-  const { vehicle: activeVehicle, vehicles } = useVehicle();
   const isEditing = !!recordToEdit;
   const title = isEditing ? 'Editar Abastecimento' : 'Adicionar Novo Abastecimento';
-  const hasMultipleVehicles = vehicles.length > 1;
 
   const initialFormData: Omit<FuelingRecord, 'id'> = {
     date: new Date().toISOString().split('T')[0],
@@ -37,7 +33,6 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
     costPerLiter: 0,
     totalCost: 0,
     station: '',
-    vehicleId: activeVehicle.id, // Garante que o ID do veículo ativo seja usado
   };
 
   const [formData, setFormData] = React.useState<Omit<FuelingRecord, 'id'>>(initialFormData);
@@ -53,16 +48,12 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
         costPerLiter: recordToEdit.costPerLiter,
         totalCost: recordToEdit.totalCost,
         station: recordToEdit.station,
-        vehicleId: recordToEdit.vehicleId,
       });
       setActiveTab('single'); // Edição sempre no modo único
     } else {
-      setFormData({
-        ...initialFormData,
-        vehicleId: activeVehicle.id, // Atualiza o ID do veículo ativo ao abrir
-      });
+      setFormData(initialFormData);
     }
-  }, [recordToEdit, isOpen, activeVehicle.id]);
+  }, [recordToEdit, isOpen]);
 
   const calculateTotalCost = (liters: number, costPerL: number) => {
     return parseFloat((liters * costPerL).toFixed(2));
@@ -112,10 +103,6 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
 
   const handleSubmitSingle = (e: React.FormEvent) => {
     e.preventDefault();
-    if (activeVehicle.id === '') {
-        alert('Por favor, cadastre um veículo antes de registrar.');
-        return;
-    }
     onSubmit(formData);
     onOpenChange(false);
   };
@@ -132,22 +119,6 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
             {isEditing ? 'Edite os detalhes do abastecimento.' : 'Registre os detalhes do seu abastecimento ou inicie um registro de viagem.'}
           </DialogDescription>
         </DialogHeader>
-        
-        {/* Exibição do Veículo Ativo */}
-        <div className={cn(
-            "flex items-center space-x-2 p-3 rounded-md border",
-            hasMultipleVehicles ? "bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700" : "bg-gray-50 dark:bg-gray-800 dark:border-gray-700"
-        )}>
-            <Car className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-            <span className="text-sm font-medium dark:text-white">
-                Veículo Ativo: {activeVehicle.id ? `${activeVehicle.model} (${activeVehicle.plate})` : 'Nenhum Veículo Cadastrado'}
-            </span>
-            {hasMultipleVehicles && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
-                    (Mude em Configurações > Veículo)
-                </span>
-            )}
-        </div>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'single' | 'trip')} className="w-full">
           {!isEditing && (
@@ -252,7 +223,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
                 />
               </div>
               
-              <Button type="submit" className="mt-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800" disabled={activeVehicle.id === ''}>
+              <Button type="submit" className="mt-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
                 {isEditing ? 'Salvar Alterações' : 'Adicionar Abastecimento'}
               </Button>
             </form>

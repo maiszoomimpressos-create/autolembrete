@@ -3,7 +3,6 @@ import { FuelingRecord, FuelingRecordInsert } from '@/types/fueling';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/components/SessionContextProvider';
 import { showError } from '@/utils/toast';
-import { useVehicle } from '@/hooks/useVehicle'; // Importando useVehicle para obter o ID ativo
 
 const FUELING_RECORDS_KEY = 'fueling_records';
 
@@ -19,13 +18,11 @@ const fromDb = (record: any): FuelingRecord => ({
   costPerLiter: parseFloat(record.cost_per_liter),
   totalCost: parseFloat(record.total_cost),
   station: record.station,
-  vehicleId: record.vehicle_id, // Novo campo
 });
 
 // Converte do formato do Frontend (camelCase) para o formato de Inserção/Atualização do DB (snake_case)
-const toDbInsert = (record: Omit<FuelingRecord, 'id'>, userId: string, vehicleId: string): FuelingRecordInsert => ({
+const toDbInsert = (record: Omit<FuelingRecord, 'id'>, userId: string): FuelingRecordInsert => ({
   user_id: userId,
-  vehicle_id: vehicleId, // Novo campo
   date: record.date,
   mileage: record.mileage,
   fuel_type: record.fuelType,
@@ -37,12 +34,11 @@ const toDbInsert = (record: Omit<FuelingRecord, 'id'>, userId: string, vehicleId
 
 // --- Funções de Busca ---
 
-const fetchFuelingRecords = async (userId: string, vehicleId: string): Promise<FuelingRecord[]> => {
+const fetchFuelingRecords = async (userId: string): Promise<FuelingRecord[]> => {
   const { data, error } = await supabase
     .from('fueling_records')
     .select('*')
     .eq('user_id', userId)
-    .eq('vehicle_id', vehicleId) // Filtrando por veículo
     .order('mileage', { ascending: false }) // Ordena por KM para facilitar o cálculo de eficiência
     .order('date', { ascending: false });
 
@@ -56,17 +52,15 @@ const fetchFuelingRecords = async (userId: string, vehicleId: string): Promise<F
 
 export const useFuelingRecordsQuery = () => {
   const { user } = useSession();
-  const { vehicle } = useVehicle(); // Obtém o veículo ativo
   const userId = user?.id;
-  const vehicleId = vehicle.id;
 
   return useQuery<FuelingRecord[], Error>({
-    queryKey: [FUELING_RECORDS_KEY, userId, vehicleId], // Adiciona vehicleId à chave
+    queryKey: [FUELING_RECORDS_KEY, userId],
     queryFn: () => {
-      if (!userId || !vehicleId) return Promise.resolve([]);
-      return fetchFuelingRecords(userId, vehicleId);
+      if (!userId) return Promise.resolve([]);
+      return fetchFuelingRecords(userId);
     },
-    enabled: !!userId && !!vehicleId,
+    enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
@@ -74,18 +68,16 @@ export const useFuelingRecordsQuery = () => {
 export const useFuelingMutations = () => {
   const queryClient = useQueryClient();
   const { user } = useSession();
-  const { vehicle } = useVehicle(); // Obtém o veículo ativo
   const userId = user?.id;
-  const vehicleId = vehicle.id;
 
   const invalidateQuery = () => {
-    queryClient.invalidateQueries({ queryKey: [FUELING_RECORDS_KEY, userId, vehicleId] });
+    queryClient.invalidateQueries({ queryKey: [FUELING_RECORDS_KEY, userId] });
   };
 
   const addRecordMutation = useMutation<FuelingRecord, Error, Omit<FuelingRecord, 'id'>>({
     mutationFn: async (record) => {
-      if (!userId || !vehicleId) throw new Error('User or Vehicle not authenticated/selected.');
-      const dbRecord = toDbInsert(record, userId, vehicleId);
+      if (!userId) throw new Error('User not authenticated.');
+      const dbRecord = toDbInsert(record, userId);
       
       const { data, error } = await supabase
         .from('fueling_records')
@@ -102,12 +94,8 @@ export const useFuelingMutations = () => {
 
   const updateRecordMutation = useMutation<FuelingRecord, Error, FuelingRecord>({
     mutationFn: async (record) => {
-      if (!userId || !vehicleId) throw new Error('User or Vehicle not authenticated/selected.');
-      // Note: toDbInsert é usado aqui, mas precisamos garantir que o ID do veículo seja mantido
-      const dbRecord = {
-          ...toDbInsert(record, userId, vehicleId),
-          vehicle_id: vehicleId, // Garante que o vehicle_id está no update payload
-      };
+      if (!userId) throw new Error('User not authenticated.');
+      const dbRecord = toDbInsert(record, userId);
       
       const { data, error } = await supabase
         .from('fueling_records')
@@ -125,14 +113,13 @@ export const useFuelingMutations = () => {
 
   const deleteRecordMutation = useMutation<void, Error, string>({
     mutationFn: async (id) => {
-      if (!userId || !vehicleId) throw new Error('User or Vehicle not authenticated/selected.');
+      if (!userId) throw new Error('User not authenticated.');
       
       const { error } = await supabase
         .from('fueling_records')
         .delete()
         .eq('id', id)
-        .eq('user_id', userId)
-        .eq('vehicle_id', vehicleId); // Segurança extra
+        .eq('user_id', userId);
 
       if (error) throw new Error(error.message);
     },

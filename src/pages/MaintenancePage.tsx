@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Wrench, Loader2 } from 'lucide-react';
 import MaintenanceTable from '@/components/MaintenanceTable';
@@ -8,44 +8,16 @@ import { showSuccess, showError } from '@/utils/toast';
 import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
 import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard';
 import { useUpcomingMaintenance } from '@/hooks/useUpcomingMaintenance';
-import { useMileageRecords } from '@/hooks/useMileageRecords';
-import { useFuelingRecords } from '@/hooks/useFuelingRecords';
-import { useMileageAlerts } from '@/hooks/useMileageAlerts'; // Novo Import
-import { useDateAlerts } from '@/hooks/useDateAlerts'; // Novo Import
-import { MaintenanceAlert } from '@/types/alert'; // Novo Import
-import { useNavigate } from 'react-router-dom'; // Novo Import
+import { useMileageRecords } from '@/hooks/useMileageRecords'; // Novo Import
+import { useFuelingRecords } from '@/hooks/useFuelingRecords'; // Novo Import
 
 const MaintenancePage: React.FC = () => {
-  const navigate = useNavigate();
-  
-  // Hooks para obter o KM atual e registros
+  // Hooks para obter o KM atual
   const { records: fuelingRecords } = useFuelingRecords();
   const { currentMileage } = useMileageRecords(fuelingRecords);
 
   const { records, addOrUpdateRecord, deleteRecord, isLoading, isMutating } = useMaintenanceRecords();
   const upcomingRecord = useUpcomingMaintenance(records);
-  
-  // Hooks de Alerta
-  const { alerts: mileageAlerts } = useMileageAlerts(records, currentMileage);
-  const { alerts: dateAlerts } = useDateAlerts(records);
-  
-  // Encontra o alerta de repetição mais urgente (KM ou Data)
-  const mostUrgentAlert = useMemo(() => {
-    const allAlerts = [...mileageAlerts, ...dateAlerts];
-    if (allAlerts.length === 0) return null;
-    
-    // O primeiro item na lista combinada e ordenada é o mais urgente
-    return allAlerts.sort((a, b) => {
-        if (a.status === 'Atrasado' && b.status !== 'Atrasado') return -1;
-        if (a.status !== 'Atrasado' && b.status === 'Atrasado') return 1;
-        
-        // Se ambos são atrasados, o que passou mais tempo (maior value) vem primeiro
-        if (a.status === 'Atrasado' && b.status === 'Atrasado') return b.value - a.value;
-
-        // Se ambos são próximos, o que está mais perto (menor value) vem primeiro
-        return a.value - b.value;
-    })[0];
-  }, [mileageAlerts, dateAlerts]);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MaintenanceRecord | null>(null);
@@ -77,11 +49,6 @@ const MaintenancePage: React.FC = () => {
     
     // Se já tiver KM e Custo, podemos concluir diretamente
     await addOrUpdateRecord({ ...record, status: 'Concluído' }, record.id);
-  };
-  
-  const handleAlertClick = (alert: MaintenanceAlert) => {
-    // Redireciona para a página de alertas para ver todos
-    navigate('/alerts');
   };
 
   const handleOpenDialog = () => {
@@ -121,25 +88,12 @@ const MaintenancePage: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
-          <UpcomingMaintenanceCard 
-            record={upcomingRecord} 
-            fallbackAlert={mostUrgentAlert} // Passando o alerta mais urgente
-            onEdit={handleEdit} 
-            onAlertClick={handleAlertClick}
-          />
+          <UpcomingMaintenanceCard record={upcomingRecord} onEdit={handleEdit} />
         </div>
         <div className="md:col-span-2 flex items-center justify-center bg-gray-50 border border-dashed rounded-lg dark:bg-gray-800 dark:border-gray-700 p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-                {mileageAlerts.length + dateAlerts.length} alertas de repetição ativos.
+                Espaço para filtros ou estatísticas rápidas de manutenção.
             </p>
-            <Button 
-                variant="link" 
-                size="sm" 
-                onClick={() => navigate('/alerts')}
-                className="ml-2 text-blue-600 dark:text-blue-400"
-            >
-                Ver Todos
-            </Button>
         </div>
       </div>
 
@@ -155,7 +109,7 @@ const MaintenancePage: React.FC = () => {
         onOpenChange={setIsDialogOpen}
         recordToEdit={recordToEdit}
         onSubmit={handleAddOrEdit}
-        currentMileage={currentMileage}
+        currentMileage={currentMileage} // Passando o KM atual
       />
     </div>
   );

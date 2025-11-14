@@ -7,10 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FuelingRecord } from '@/types/fueling';
 import { Plus, Trash2, Gauge, TrendingUp } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
-import { useVehicle } from '@/hooks/useVehicle';
 
 // Tipo auxiliar para o estado do formulário de viagem
-interface TripRecord extends Omit<FuelingRecord, 'id' | 'vehicleId'> {}
+interface TripRecord extends Omit<FuelingRecord, 'id'> {}
 
 interface TripFuelingFormProps {
   onSubmit: (data: Omit<FuelingRecord, 'id'>) => void;
@@ -26,8 +25,6 @@ const calculateEfficiency = (distance: number, volume: number): number | null =>
 };
 
 const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel }) => {
-  const { vehicle: activeVehicle } = useVehicle();
-  
   const [initialMileage, setInitialMileage] = useState<number>(0); // KM Inicial da Viagem
   const [tripRecords, setTripRecords] = useState<TripRecord[]>([
     // Começa com um registro vazio
@@ -144,11 +141,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (activeVehicle.id === '') {
-        showError("Por favor, cadastre um veículo antes de registrar a viagem.");
-        return;
-    }
 
     // Validação de KM Inicial
     if (initialMileage <= 0) {
@@ -172,12 +164,9 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
       return;
     }
 
-    // Submete cada registro individualmente, adicionando o vehicleId
+    // Submete cada registro individualmente
     tripRecords.forEach(record => {
-      onSubmit({
-          ...record,
-          vehicleId: activeVehicle.id,
-      } as Omit<FuelingRecord, 'id'>);
+      onSubmit(record);
     });
 
     showSuccess(`Viagem registrada! ${tripRecords.length} abastecimentos adicionados. Eficiência média: ${tripMetrics.averageEfficiency} km/l.`);
@@ -206,7 +195,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                 className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 required
                 min={0}
-                disabled={activeVehicle.id === ''}
             />
         </div>
       </Card>
@@ -245,7 +233,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                     onChange={(e) => handleChange(index, 'date', e.target.value)}
                     className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
-                    disabled={activeVehicle.id === ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -258,7 +245,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                     className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
                     min={previousMileage + 1}
-                    disabled={activeVehicle.id === ''}
                   />
                   {initialMileage > 0 && record.mileage > 0 && record.mileage <= previousMileage && (
                     <p className="text-xs text-red-500">O KM deve ser maior que o KM anterior ({previousMileage.toLocaleString('pt-BR')}).</p>
@@ -273,7 +259,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                     onChange={(e) => handleChange(index, 'station', e.target.value)}
                     placeholder="Nome do posto"
                     className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    disabled={activeVehicle.id === ''}
                   />
                 </div>
                 <div className="space-y-2 col-span-2">
@@ -281,7 +266,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                   <Select
                     value={record.fuelType}
                     onValueChange={(value) => handleChange(index, 'fuelType', value as FuelingRecord['fuelType'])}
-                    disabled={activeVehicle.id === ''}
                   >
                     <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                       <SelectValue placeholder="Selecione o tipo" />
@@ -303,7 +287,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                     onChange={(e) => handleChange(index, 'volumeLiters', e.target.value)}
                     className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
-                    disabled={activeVehicle.id === ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -316,7 +299,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                     onChange={(e) => handleChange(index, 'costPerLiter', e.target.value)}
                     className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
-                    disabled={activeVehicle.id === ''}
                   />
                 </div>
                 <div className="space-y-2 col-span-2">
@@ -329,7 +311,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
                     onChange={(e) => handleChange(index, 'totalCost', e.target.value)}
                     className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
-                    disabled={activeVehicle.id === ''}
                   />
                 </div>
                 
@@ -358,7 +339,6 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
         variant="outline" 
         onClick={handleAddRecord} 
         className="w-full dark:hover:bg-gray-700"
-        disabled={activeVehicle.id === ''}
       >
         <Plus className="w-4 h-4 mr-2" />
         Adicionar Outro Abastecimento
@@ -388,7 +368,7 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
         </Card>
       )}
 
-      <Button type="submit" className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800" disabled={activeVehicle.id === ''}>
+      <Button type="submit" className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
         Registrar Viagem ({tripRecords.length} Abastecimentos)
       </Button>
     </form>

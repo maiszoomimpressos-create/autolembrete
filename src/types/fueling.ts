@@ -7,13 +7,11 @@ export interface FuelingRecord {
   costPerLiter: number; // cost_per_liter
   totalCost: number; // total_cost
   station: string;
-  vehicleId: string; // Novo campo
 }
 
 // Tipo para inserção no Supabase (snake_case)
 export interface FuelingRecordInsert {
   user_id: string;
-  vehicle_id: string; // Novo campo
   date: string;
   mileage: number;
   fuel_type: string;
