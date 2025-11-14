@@ -3,12 +3,13 @@ import MetricCard from '@/components/MetricCard';
 import VehicleSummary from '@/components/VehicleSummary';
 import MonthlySpendingChart from '@/components/MonthlySpendingChart';
 import FuelEfficiencyChart from '@/components/FuelEfficiencyChart';
-import { DollarSign, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
+import { DollarSign, Clock, TrendingUp, AlertTriangle, Gauge } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFuelingMetrics } from '@/hooks/useFuelingMetrics';
 import { useFuelingRecords } from '@/hooks/useFuelingRecords';
 import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
 import { useMaintenanceMetrics } from '@/hooks/useMaintenanceMetrics';
+import { useMileageAlerts } from '@/hooks/useMileageAlerts'; // Novo Import
 
 const DashboardPage: React.FC = () => {
   // Dados de Abastecimento
@@ -18,6 +19,9 @@ const DashboardPage: React.FC = () => {
   // Dados de Manutenção
   const { records: maintenanceRecords } = useMaintenanceRecords();
   const { totalCost, pendingCount, nextMaintenance } = useMaintenanceMetrics(maintenanceRecords);
+  
+  // Alertas de KM
+  const { currentMileage, alerts: mileageAlerts } = useMileageAlerts(maintenanceRecords, fuelingRecords);
 
   const efficiencyValue = averageEfficiency !== null 
     ? `${averageEfficiency} km/l` 
@@ -89,23 +93,52 @@ const DashboardPage: React.FC = () => {
           </CardHeader>
           <CardContent className="p-0">
             <ul className="space-y-3 text-sm dark:text-gray-300">
-              {pendingCount > 0 && (
-                <li className="flex items-center text-red-500">
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Você tem {pendingCount} manutenções pendentes.
+              {/* Alerta de KM Atual */}
+              {currentMileage > 0 && (
+                <li className="flex items-center text-gray-600 dark:text-gray-400">
+                  <Gauge className="w-4 h-4 mr-2" />
+                  KM Atual Estimado: {currentMileage.toLocaleString('pt-BR')} km
                 </li>
               )}
+
+              {/* Alertas de Manutenção Pendente (Status) */}
+              {pendingCount > 0 && (
+                <li className="flex items-center text-red-500 font-semibold">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Você tem {pendingCount} manutenções pendentes (status).
+                </li>
+              )}
+
+              {/* Alertas de KM */}
+              {mileageAlerts.map(alert => (
+                <li 
+                  key={alert.id} 
+                  className={`flex items-center ${alert.status === 'Atrasado' ? 'text-red-600' : 'text-yellow-600'}`}
+                >
+                  <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">
+                    {alert.type}: {alert.status === 'Atrasado' 
+                      ? `Atrasado por ${alert.kmRemaining.toLocaleString('pt-BR')} km` 
+                      : `Próximo em ${alert.kmRemaining.toLocaleString('pt-BR')} km`}
+                  </span>
+                </li>
+              ))}
+
+              {/* Alerta de Próxima Manutenção (Data) */}
               {nextMaintenance && (
                 <li className="flex items-center text-yellow-500">
                   <Clock className="w-4 h-4 mr-2" />
-                  Próxima Manutenção: {nextMaintenance.type}
+                  Próxima Manutenção Agendada: {nextMaintenance.type}
                 </li>
               )}
-              {/* Placeholder para outros alertas */}
-              <li className="flex items-center text-green-500">
-                <TrendingUp className="w-4 h-4 mr-2" />
-                IPVA Pago (2024)
-              </li>
+              
+              {/* Placeholder de sucesso */}
+              {pendingCount === 0 && mileageAlerts.length === 0 && !nextMaintenance && (
+                <li className="flex items-center text-green-500">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Seu veículo está em dia!
+                </li>
+              )}
             </ul>
           </CardContent>
         </Card>

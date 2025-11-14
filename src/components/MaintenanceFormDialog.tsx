@@ -30,10 +30,11 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     date: recordToEdit?.date || new Date().toISOString().split('T')[0],
     mileage: recordToEdit?.mileage || 0,
     type: recordToEdit?.type || 'Troca de Óleo',
-    customType: recordToEdit?.customType || '', // Novo campo
+    customType: recordToEdit?.customType || '',
     description: recordToEdit?.description || '',
     cost: recordToEdit?.cost || 0,
     status: recordToEdit?.status || 'Concluído',
+    nextMileage: recordToEdit?.nextMileage || undefined, // Novo campo
   });
 
   React.useEffect(() => {
@@ -46,6 +47,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         description: recordToEdit.description,
         cost: recordToEdit.cost,
         status: recordToEdit.status,
+        nextMileage: recordToEdit.nextMileage || undefined,
       });
     } else {
       setFormData({
@@ -56,6 +58,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         description: '',
         cost: 0,
         status: 'Concluído',
+        nextMileage: undefined,
       });
     }
   }, [recordToEdit, isOpen]);
@@ -64,7 +67,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     const { id, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [id]: id === 'mileage' || id === 'cost' ? parseFloat(value) || 0 : value,
+      [id]: id === 'mileage' || id === 'cost' || id === 'nextMileage' ? parseFloat(value) || 0 : value,
     }));
   };
 
@@ -83,6 +86,12 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     // Validação para o campo 'Outro'
     if (formData.type === 'Outro' && !formData.customType?.trim()) {
         showError('Por favor, especifique o nome da manutenção personalizada.');
+        return;
+    }
+    
+    // Validação de KM de alerta
+    if (formData.nextMileage && formData.nextMileage <= formData.mileage) {
+        showError('O KM de Alerta deve ser maior que o KM da manutenção atual.');
         return;
     }
 
@@ -188,6 +197,23 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Campo de KM de Alerta */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="nextMileage" className="text-right dark:text-gray-300">KM de Alerta</Label>
+            <Input
+              id="nextMileage"
+              type="number"
+              value={formData.nextMileage || ''}
+              onChange={handleChange}
+              placeholder="Ex: 55000"
+              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+          </div>
+          <p className="col-span-4 text-xs text-gray-500 dark:text-gray-400 -mt-2">
+            Opcional. Defina o KM para ser alertado sobre a próxima ocorrência desta manutenção.
+          </p>
+
           <div className="grid gap-2">
             <Label htmlFor="description" className="dark:text-gray-300">Descrição</Label>
             <Textarea
