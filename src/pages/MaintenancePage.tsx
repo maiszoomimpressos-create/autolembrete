@@ -6,12 +6,17 @@ import MaintenanceFormDialog from '@/components/MaintenanceFormDialog';
 import { MaintenanceRecord } from '@/types/maintenance';
 import { showSuccess, showError } from '@/utils/toast';
 import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
-import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard'; // Novo Import
-import { useUpcomingMaintenance } from '@/hooks/useUpcomingMaintenance'; // Novo Import
+import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard';
+import { useUpcomingMaintenance } from '@/hooks/useUpcomingMaintenance';
+import { useMileageRecords } from '@/hooks/useMileageRecords'; // Novo Import
+import { useFuelingRecords } from '@/hooks/useFuelingRecords'; // Novo Import
 
 const MaintenancePage: React.FC = () => {
+  const { records: fuelingRecords } = useFuelingRecords(); // Necessário para o hook de KM
+  const { currentMileage } = useMileageRecords(fuelingRecords); // Obtendo o KM atual
+
   const { records, addOrUpdateRecord, deleteRecord } = useMaintenanceRecords();
-  const upcomingRecord = useUpcomingMaintenance(records); // Usando o novo hook
+  const upcomingRecord = useUpcomingMaintenance(records);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MaintenanceRecord | null>(null);
@@ -82,6 +87,7 @@ const MaintenancePage: React.FC = () => {
         onOpenChange={setIsDialogOpen}
         recordToEdit={recordToEdit}
         onSubmit={handleAddOrEdit}
+        currentMileage={currentMileage} // Passando o KM atual
       />
     </div>
   );

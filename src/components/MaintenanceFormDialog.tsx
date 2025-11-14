@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MaintenanceRecord } from '@/types/maintenance';
-import { Wrench } from 'lucide-react';
+import { Wrench, AlertTriangle } from 'lucide-react';
 import { showError } from '@/utils/toast';
 
 interface MaintenanceFormDialogProps {
@@ -14,6 +14,7 @@ interface MaintenanceFormDialogProps {
   onOpenChange: (open: boolean) => void;
   recordToEdit: MaintenanceRecord | null;
   onSubmit: (data: Omit<MaintenanceRecord, 'id'>) => void;
+  currentMileage: number; // Novo prop
 }
 
 const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
@@ -21,6 +22,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   onOpenChange,
   recordToEdit,
   onSubmit,
+  currentMileage,
 }) => {
   const isEditing = !!recordToEdit;
   const title = isEditing ? 'Editar Manutenção' : 'Adicionar Nova Manutenção';
@@ -34,7 +36,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     description: recordToEdit?.description || '',
     cost: recordToEdit?.cost || 0,
     status: recordToEdit?.status || 'Concluído',
-    nextMileage: recordToEdit?.nextMileage || undefined, // Novo campo
+    nextMileage: recordToEdit?.nextMileage || undefined,
   });
 
   React.useEffect(() => {
@@ -52,7 +54,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     } else {
       setFormData({
         date: new Date().toISOString().split('T')[0],
-        mileage: 0,
+        mileage: currentMileage, // Sugere o KM atual
         type: 'Troca de Óleo',
         customType: '',
         description: '',
@@ -61,7 +63,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         nextMileage: undefined,
       });
     }
-  }, [recordToEdit, isOpen]);
+  }, [recordToEdit, isOpen, currentMileage]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -100,6 +102,11 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   };
 
   const isCustomType = formData.type === 'Outro';
+  
+  // Lógica de Alerta de KM
+  const isCompleted = formData.status === 'Concluído';
+  const isMileageHigherThanCurrent = isCompleted && formData.mileage > currentMileage;
+  const mileageDifference = formData.mileage - currentMileage;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -136,6 +143,20 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
               required
             />
           </div>
+          
+          {/* Alerta de KM */}
+          {isMileageHigherThanCurrent && currentMileage > 0 && (
+            <div className="col-span-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg text-sm text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300">
+              <div className="flex items-start space-x-2">
+                <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Atualização de Quilometragem Sugerida</p>
+                  <p>O KM desta manutenção ({formData.mileage.toLocaleString('pt-BR')} km) é {mileageDifference.toLocaleString('pt-BR')} km maior que o KM atual registrado ({currentMileage.toLocaleString('pt-BR')} km). Considere atualizar o KM atual do seu veículo.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="type" className="text-right dark:text-gray-300">Tipo</Label>
             <Select
