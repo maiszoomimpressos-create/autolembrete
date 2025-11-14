@@ -14,6 +14,7 @@ import { useLocation } from 'react-router-dom';
 import { useMileageAlerts } from '@/hooks/useMileageAlerts';
 import { useDateAlerts } from '@/hooks/useDateAlerts';
 import { MaintenanceAlert } from '@/types/alert';
+import { useMemo } from 'react'; // Importando useMemo
 
 const MaintenancePage: React.FC = () => {
   const location = useLocation();
@@ -27,6 +28,28 @@ const MaintenancePage: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MaintenanceRecord | null>(null);
   const [alertToCreateFrom, setAlertToCreateFrom] = useState<MaintenanceAlert | null>(null);
+  
+  // Alertas de Repetição (Manutenções Concluídas que precisam ser refeitas)
+  const { alerts: mileageAlerts } = useMileageAlerts(records, currentMileage);
+  const { alerts: dateAlerts } = useDateAlerts(records);
+  
+  // Combina e ordena todos os alertas de repetição (lógica copiada do DashboardPage)
+  const allRepetitionAlerts = useMemo(() => {
+    const all = [...mileageAlerts, ...dateAlerts];
+    
+    all.sort((a, b) => {
+      if (a.status === 'Atrasado' && b.status !== 'Atrasado') return -1;
+      if (a.status !== 'Atrasado' && b.status === 'Atrasado') return 1;
+      if (a.unit === 'km' && b.unit === 'dias') return -1;
+      if (a.unit === 'dias' && b.unit === 'km') return 1;
+      if (a.status === 'Atrasado') return b.value - a.value;
+      return a.value - b.value;
+    });
+    return all;
+  }, [mileageAlerts, dateAlerts]);
+  
+  const mostUrgentAlert: MaintenanceAlert | null = allRepetitionAlerts.length > 0 ? allRepetitionAlerts[0] : null;
+
 
   // Efeito para lidar com a navegação de edição/criação do Dashboard
   useEffect(() => {
@@ -97,10 +120,10 @@ const MaintenancePage: React.FC = () => {
   };
   
   const handleAlertClick = (alert: MaintenanceAlert) => {
-      const originalRecord = records.find(r => r.id === alert.id.split('-')[0]);
-      if (originalRecord) {
-          handleEdit(originalRecord);
-      }
+      // Ao clicar em um alerta de repetição, abrimos o modal para criar um NOVO registro
+      setAlertToCreateFrom(alert);
+      setRecordToEdit(null);
+      setIsDialogOpen(true);
   };
 
   if (isLoading) {
@@ -137,7 +160,7 @@ const MaintenancePage: React.FC = () => {
         <div className="md:col-span-1">
           <UpcomingMaintenanceCard 
             record={upcomingRecord} 
-            fallbackAlert={null}
+            fallbackAlert={upcomingRecord ? null : mostUrgentAlert} // Usa alerta de repetição se não houver agendamento/pendente
             onEdit={handleEdit} 
             onAlertClick={handleAlertClick}
           />

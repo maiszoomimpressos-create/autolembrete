@@ -111,13 +111,15 @@ const DashboardPage: React.FC = () => {
 
       {/* Cartões de Métricas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          title="Próxima Manutenção"
-          value={nextMaintenanceValue}
-          description={nextMaintenanceDescription}
-          icon={Clock}
-          colorClass="text-yellow-600 dark:text-yellow-400"
+        {/* Card 1: Próxima Manutenção (Substituído pelo UpcomingMaintenanceCard) */}
+        <UpcomingMaintenanceCard 
+            record={nextMaintenance} // Prioriza Agendado/Pendente
+            fallbackAlert={nextMaintenance ? null : mostUrgentAlert} // Usa alerta de repetição se não houver agendamento/pendente
+            onEdit={handleEditMaintenance} 
+            onAlertClick={handleAlertClick}
         />
+        
+        {/* Card 2: Gastos Totais */}
         <MetricCard
           title="Gastos Totais (Ano)"
           value={totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
@@ -125,6 +127,8 @@ const DashboardPage: React.FC = () => {
           icon={DollarSign}
           colorClass="text-green-600 dark:text-green-400"
         />
+        
+        {/* Card 3: Manutenções Pendentes */}
         <MetricCard
           title="Manutenções Pendentes"
           value={pendingCount}
@@ -132,6 +136,8 @@ const DashboardPage: React.FC = () => {
           icon={AlertTriangle}
           colorClass={pendingCount > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}
         />
+        
+        {/* Card 4: Eficiência Média */}
         <MetricCard
           title="Eficiência Média"
           value={efficiencyValue}
@@ -153,18 +159,10 @@ const DashboardPage: React.FC = () => {
             
             <Card className="bg-white p-6 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
               <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-xl font-semibold dark:text-white">Alertas e Lembretes</CardTitle>
+                <CardTitle className="text-xl font-semibold dark:text-white">Alertas de Repetição</CardTitle>
               </CardHeader>
               <CardContent className="p-0 space-y-3">
-                {/* Alerta de KM Atual */}
-                {currentMileage > 0 && (
-                  <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm">
-                    <Gauge className="w-4 h-4 mr-2" />
-                    KM Atual Estimado: {currentMileage.toLocaleString('pt-BR')} km
-                  </div>
-                )}
-
-                {/* Alertas de Manutenção Pendente (Status) */}
+                {/* Alertas de Manutenção Pendente (Status) - Mantido aqui para visibilidade */}
                 {pendingCount > 0 && (
                   <button 
                     onClick={() => navigate('/maintenance')}
@@ -182,10 +180,10 @@ const DashboardPage: React.FC = () => {
                 ))}
                 
                 {/* Placeholder de sucesso */}
-                {pendingCount === 0 && allRepetitionAlerts.length === 0 && !nextMaintenance && (
+                {pendingCount === 0 && allRepetitionAlerts.length === 0 && (
                   <div className="flex items-center text-green-500 p-3 border border-green-200 bg-green-50/50 rounded-lg dark:bg-green-900/10 dark:border-green-900">
                     <TrendingUp className="w-4 h-4 mr-2" />
-                    Seu veículo está em dia!
+                    Nenhum alerta de repetição ativo.
                   </div>
                 )}
               </CardContent>
@@ -196,24 +194,6 @@ const DashboardPage: React.FC = () => {
         <div className="lg:col-span-2 grid gap-4 md:grid-cols-2">
           <MonthlySpendingChart />
           <FuelEfficiencyChart fuelingRecords={fuelingRecords} />
-        </div>
-      </div>
-      
-      {/* Cartão de Próxima Manutenção (Atualizado para usar o alerta mais urgente como fallback) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
-          <UpcomingMaintenanceCard 
-            record={nextMaintenance} // Mantém o foco em Agendado/Pendente
-            fallbackAlert={nextMaintenance ? null : mostUrgentAlert} // Usa alerta de repetição se não houver agendamento/pendente
-            onEdit={handleEditMaintenance} 
-            onAlertClick={handleAlertClick}
-          />
-        </div>
-        {/* Placeholder para outras métricas ou filtros */}
-        <div className="md:col-span-2 flex items-center justify-center bg-gray-50 border border-dashed rounded-lg dark:bg-gray-800 dark:border-gray-700 p-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-                Espaço para filtros ou estatísticas rápidas de manutenção.
-            </p>
         </div>
       </div>
     </div>
