@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FuelingRecord } from '@/types/fueling';
-import { Fuel } from 'lucide-react';
+import { Fuel, Car } from 'lucide-react';
 
 interface FuelingFormDialogProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
   };
 
   const [formData, setFormData] = React.useState<Omit<FuelingRecord, 'id'>>(initialFormData);
+  const [activeTab, setActiveTab] = React.useState<'single' | 'trip'>(isEditing ? 'single' : 'single');
 
   React.useEffect(() => {
     if (recordToEdit) {
@@ -46,6 +48,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
         totalCost: recordToEdit.totalCost,
         station: recordToEdit.station,
       });
+      setActiveTab('single'); // Edição sempre no modo único
     } else {
       setFormData(initialFormData);
     }
@@ -92,7 +95,7 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmitSingle = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
     onOpenChange(false);
@@ -100,107 +103,131 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] dark:bg-gray-900 dark:text-white">
+      <DialogContent className="sm:max-w-[480px] dark:bg-gray-900 dark:text-white">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Fuel className="w-5 h-5 text-blue-500" />
             <span>{title}</span>
           </DialogTitle>
           <DialogDescription className="dark:text-gray-400">
-            Registre os detalhes do seu último abastecimento.
+            {isEditing ? 'Edite os detalhes do abastecimento.' : 'Registre os detalhes do seu abastecimento ou inicie um registro de viagem.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="date" className="text-right dark:text-gray-300">Data</Label>
-            <Input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={handleChange}
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="mileage" className="text-right dark:text-gray-300">KM</Label>
-            <Input
-              id="mileage"
-              type="number"
-              value={formData.mileage}
-              onChange={handleChange}
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="fuelType" className="text-right dark:text-gray-300">Combustível</Label>
-            <Select
-              value={formData.fuelType}
-              onValueChange={(value) => handleSelectChange('fuelType', value as FuelingRecord['fuelType'])}
-            >
-              <SelectTrigger className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                {['Gasolina Comum', 'Gasolina Aditivada', 'Etanol', 'Diesel'].map(type => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="volumeLiters" className="text-right dark:text-gray-300">Litros</Label>
-            <Input
-              id="volumeLiters"
-              type="number"
-              step="0.01"
-              value={formData.volumeLiters}
-              onChange={handleChange}
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="costPerLiter" className="text-right dark:text-gray-300">Custo/L (R$)</Label>
-            <Input
-              id="costPerLiter"
-              type="number"
-              step="0.01"
-              value={formData.costPerLiter}
-              onChange={handleChange}
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="totalCost" className="text-right dark:text-gray-300">Custo Total (R$)</Label>
-            <Input
-              id="totalCost"
-              type="number"
-              step="0.01"
-              value={formData.totalCost}
-              onChange={handleChange}
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="station" className="text-right dark:text-gray-300">Posto</Label>
-            <Input
-              id="station"
-              type="text"
-              value={formData.station}
-              onChange={handleChange}
-              placeholder="Nome do posto"
-              className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            />
-          </div>
-          
-          <Button type="submit" className="mt-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
-            {isEditing ? 'Salvar Alterações' : 'Adicionar Abastecimento'}
-          </Button>
-        </form>
+
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'single' | 'trip')} className="w-full">
+          {!isEditing && (
+            <TabsList className="grid w-full grid-cols-2 dark:bg-gray-800">
+              <TabsTrigger value="single" className="flex items-center space-x-2">
+                <Fuel className="w-4 h-4" />
+                <span>Abastecimento Único</span>
+              </TabsTrigger>
+              <TabsTrigger value="trip" className="flex items-center space-x-2">
+                <Car className="w-4 h-4" />
+                <span>Registro de Viagem</span>
+              </TabsTrigger>
+            </TabsList>
+          )}
+
+          {/* Aba de Abastecimento Único (Formulário existente) */}
+          <TabsContent value="single" className="mt-4">
+            <form onSubmit={handleSubmitSingle} className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="date" className="text-right dark:text-gray-300">Data</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="mileage" className="text-right dark:text-gray-300">KM</Label>
+                <Input
+                  id="mileage"
+                  type="number"
+                  value={formData.mileage}
+                  onChange={handleChange}
+                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="fuelType" className="text-right dark:text-gray-300">Combustível</Label>
+                <Select
+                  value={formData.fuelType}
+                  onValueChange={(value) => handleSelectChange('fuelType', value as FuelingRecord['fuelType'])}
+                >
+                  <SelectTrigger className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                    {['Gasolina Comum', 'Gasolina Aditivada', 'Etanol', 'Diesel'].map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="volumeLiters" className="text-right dark:text-gray-300">Litros</Label>
+                <Input
+                  id="volumeLiters"
+                  type="number"
+                  step="0.01"
+                  value={formData.volumeLiters}
+                  onChange={handleChange}
+                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="costPerLiter" className="text-right dark:text-gray-300">Custo/L (R$)</Label>
+                <Input
+                  id="costPerLiter"
+                  type="number"
+                  step="0.01"
+                  value={formData.costPerLiter}
+                  onChange={handleChange}
+                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="totalCost" className="text-right dark:text-gray-300">Custo Total (R$)</Label>
+                <Input
+                  id="totalCost"
+                  type="number"
+                  step="0.01"
+                  value={formData.totalCost}
+                  onChange={handleChange}
+                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="station" className="text-right dark:text-gray-300">Posto</Label>
+                <Input
+                  id="station"
+                  type="text"
+                  value={formData.station}
+                  onChange={handleChange}
+                  placeholder="Nome do posto"
+                  className="col-span-3 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                />
+              </div>
+              
+              <Button type="submit" className="mt-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
+                {isEditing ? 'Salvar Alterações' : 'Adicionar Abastecimento'}
+              </Button>
+            </form>
+          </TabsContent>
+
+          {/* Nova Aba de Registro de Viagem */}
+          <TabsContent value="trip" className="mt-4">
+            <TripFuelingForm onSubmit={onSubmit} onCancel={() => onOpenChange(false)} />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
