@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { GoogleMap, Marker, LoadScript, InfoWindow } from '@react-google-maps/api';
 import { NearbyStation } from '@/hooks/useNearbyStations';
 import { Loader2, Fuel } from 'lucide-react';
@@ -8,16 +8,31 @@ interface NearbyStationsMapProps {
   stations: NearbyStation[];
   userLocation: { lat: number; lng: number };
   isLoading: boolean;
+  selectedStationId: string | null; // Novo prop
 }
 
 // Define as bibliotecas que o Google Maps deve carregar (opcional, mas bom para o futuro)
 const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
 
-const NearbyStationsMap: React.FC<NearbyStationsMapProps> = ({ stations, userLocation, isLoading }) => {
+const NearbyStationsMap: React.FC<NearbyStationsMapProps> = ({ stations, userLocation, isLoading, selectedStationId }) => {
   const [activeMarker, setActiveMarker] = React.useState<string | null>(null);
+  const [map, setMap] = React.useState<google.maps.GoogleMap | null>(null);
   
   // Memoiza o centro do mapa para evitar recargas desnecessárias
   const center = useMemo(() => userLocation, [userLocation]);
+
+  // Efeito para centralizar o mapa e abrir o InfoWindow quando um posto é selecionado externamente
+  useEffect(() => {
+    if (selectedStationId) {
+      const station = stations.find(s => s.id === selectedStationId);
+      if (station && station.latitude && station.longitude && map) {
+        const position = { lat: station.latitude, lng: station.longitude };
+        map.panTo(position);
+        map.setZoom(15); // Zoom in para o posto
+        setActiveMarker(selectedStationId);
+      }
+    }
+  }, [selectedStationId, stations, map]);
 
   // Estilos do container do mapa
   const containerStyle = {
@@ -48,6 +63,7 @@ const NearbyStationsMap: React.FC<NearbyStationsMapProps> = ({ stations, userLoc
         mapContainerStyle={containerStyle}
         center={center}
         zoom={13} // Zoom padrão para ver postos em um raio de 5km
+        onLoad={setMap} // Salva a instância do mapa
         options={{
             disableDefaultUI: true,
             zoomControl: true,
@@ -106,7 +122,7 @@ const NearbyStationsMap: React.FC<NearbyStationsMapProps> = ({ stations, userLoc
                   color: isLowest ? "#10b981" : "#f59e0b",
               }}
             >
-              {activeMarker === station.id && (
+              {(activeMarker === station.id || selectedStationId === station.id) && (
                 <InfoWindow onCloseClick={() => setActiveMarker(null)}>
                   <div className="p-2 max-w-xs dark:text-gray-900">
                     <h3 className="font-bold text-base">{station.name}</h3>

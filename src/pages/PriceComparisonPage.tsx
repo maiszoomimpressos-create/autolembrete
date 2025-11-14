@@ -9,6 +9,7 @@ import { useNearbyStationsQuery, NearbyStation } from '@/hooks/useNearbyStations
 import { FuelingRecord } from '@/types/fueling';
 import { Badge } from '@/components/ui/badge';
 import NearbyStationsMap from '@/components/NearbyStationsMap'; // Importação do mapa
+import { cn } from '@/lib/utils';
 
 // Tipos de combustível disponíveis
 const FUEL_TYPES: FuelingRecord['fuelType'][] = ['Gasolina Comum', 'Gasolina Aditivada', 'Etanol', 'Diesel'];
@@ -18,6 +19,7 @@ const PriceComparisonPage: React.FC = () => {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [errorLocation, setErrorLocation] = useState<string | null>(null);
   const [selectedFuelType, setSelectedFuelType] = useState<FuelingRecord['fuelType']>(FUEL_TYPES[0]);
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null); // Novo estado
 
   const getUserLocation = () => {
     if (!navigator.geolocation) {
@@ -76,6 +78,12 @@ const PriceComparisonPage: React.FC = () => {
         highest: Math.max(...validPrices),
     };
   }, [nearbyStations]);
+  
+  const handleStationClick = (stationId: string) => {
+      setSelectedStationId(stationId);
+      // Rola para o mapa para melhor visualização em mobile
+      document.getElementById('map-card')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const renderStationList = () => {
     if (!userLocation) {
@@ -144,11 +152,19 @@ const PriceComparisonPage: React.FC = () => {
             {nearbyStations.map((station) => {
                 const isLowest = station.averagePrice === priceMetrics.lowest && station.averagePrice !== null;
                 const isHighest = station.averagePrice === priceMetrics.highest && station.averagePrice !== null;
+                const isSelected = station.id === selectedStationId;
                 
                 return (
-                    <div 
+                    <button 
                         key={station.id} 
-                        className={`p-4 border rounded-lg shadow-sm transition-all ${isLowest ? 'border-green-500 bg-green-50/50 dark:bg-green-900/10' : isHighest ? 'border-red-500 bg-red-50/50 dark:bg-red-900/10' : 'dark:bg-gray-900 dark:border-gray-700'}`}
+                        onClick={() => handleStationClick(station.id)}
+                        className={cn(
+                            "w-full text-left p-4 border rounded-lg shadow-sm transition-all hover:shadow-md",
+                            isLowest ? 'border-green-500 bg-green-50/50 dark:bg-green-900/10' : 
+                            isHighest ? 'border-red-500 bg-red-50/50 dark:bg-red-900/10' : 
+                            'dark:bg-gray-900 dark:border-gray-700',
+                            isSelected && 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-900'
+                        )}
                     >
                         <div className="flex justify-between items-start">
                             <div>
@@ -170,7 +186,7 @@ const PriceComparisonPage: React.FC = () => {
                         </div>
                         {isLowest && <Badge className="mt-2 bg-green-600 hover:bg-green-700">Melhor Preço</Badge>}
                         {isHighest && <Badge variant="destructive" className="mt-2">Preço Mais Alto</Badge>}
-                    </div>
+                    </button>
                 );
             })}
         </div>
@@ -238,7 +254,7 @@ const PriceComparisonPage: React.FC = () => {
       
       {/* Mapa de Postos Próximos */}
       {userLocation && (
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <Card id="map-card" className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
                 <CardTitle className="text-xl dark:text-white">Visualização no Mapa</CardTitle>
             </CardHeader>
@@ -247,6 +263,7 @@ const PriceComparisonPage: React.FC = () => {
                     stations={nearbyStations} 
                     userLocation={userLocation} 
                     isLoading={isLoadingStations}
+                    selectedStationId={selectedStationId}
                 />
             </CardContent>
         </Card>
