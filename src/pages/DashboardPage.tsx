@@ -6,14 +6,18 @@ import FuelEfficiencyChart from '@/components/FuelEfficiencyChart';
 import { DollarSign, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFuelingMetrics } from '@/hooks/useFuelingMetrics';
-import { useFuelingRecords } from '@/hooks/useFuelingRecords'; // Importando o hook de estado
+import { useFuelingRecords } from '@/hooks/useFuelingRecords';
+import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
+import { useMaintenanceMetrics } from '@/hooks/useMaintenanceMetrics';
 
 const DashboardPage: React.FC = () => {
-  // Obtendo os registros de abastecimento
+  // Dados de Abastecimento
   const { records: fuelingRecords } = useFuelingRecords();
-  
-  // Passando os registros para o hook de métricas
   const { averageEfficiency } = useFuelingMetrics(fuelingRecords);
+
+  // Dados de Manutenção
+  const { records: maintenanceRecords } = useMaintenanceRecords();
+  const { totalCost, pendingCount, nextMaintenance } = useMaintenanceMetrics(maintenanceRecords);
 
   const efficiencyValue = averageEfficiency !== null 
     ? `${averageEfficiency} km/l` 
@@ -22,6 +26,14 @@ const DashboardPage: React.FC = () => {
   const efficiencyDescription = averageEfficiency !== null
     ? 'Baseado nos últimos abastecimentos'
     : 'Adicione mais abastecimentos para calcular';
+
+  const nextMaintenanceValue = nextMaintenance 
+    ? `${nextMaintenance.mileage.toLocaleString('pt-BR')} km`
+    : 'Nenhuma agendada';
+    
+  const nextMaintenanceDescription = nextMaintenance
+    ? `${nextMaintenance.type} em ${new Date(nextMaintenance.date).toLocaleDateString('pt-BR')}`
+    : 'Adicione um agendamento';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -34,24 +46,24 @@ const DashboardPage: React.FC = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Próxima Manutenção"
-          value="5.000 km"
-          description="Troca de óleo e filtros"
+          value={nextMaintenanceValue}
+          description={nextMaintenanceDescription}
           icon={Clock}
           colorClass="text-yellow-600 dark:text-yellow-400"
         />
         <MetricCard
           title="Gastos Totais (Ano)"
-          value="R$ 3.500,00"
-          description="Aumento de 12% em relação ao ano passado"
+          value={totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          description="Custo total de manutenções concluídas"
           icon={DollarSign}
           colorClass="text-green-600 dark:text-green-400"
         />
         <MetricCard
           title="Manutenções Pendentes"
-          value={2}
-          description="Itens críticos que precisam de atenção"
+          value={pendingCount}
+          description={pendingCount > 0 ? `${pendingCount} itens precisam de atenção` : 'Tudo em dia!'}
           icon={AlertTriangle}
-          colorClass="text-red-600 dark:text-red-400"
+          colorClass={pendingCount > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}
         />
         <MetricCard
           title="Eficiência Média"
@@ -77,14 +89,19 @@ const DashboardPage: React.FC = () => {
           </CardHeader>
           <CardContent className="p-0">
             <ul className="space-y-3 text-sm dark:text-gray-300">
-              <li className="flex items-center text-red-500">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Troca de Pneus (Vencida)
-              </li>
-              <li className="flex items-center text-yellow-500">
-                <Clock className="w-4 h-4 mr-2" />
-                Próxima Revisão em 30 dias
-              </li>
+              {pendingCount > 0 && (
+                <li className="flex items-center text-red-500">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Você tem {pendingCount} manutenções pendentes.
+                </li>
+              )}
+              {nextMaintenance && (
+                <li className="flex items-center text-yellow-500">
+                  <Clock className="w-4 h-4 mr-2" />
+                  Próxima Manutenção: {nextMaintenance.type}
+                </li>
+              )}
+              {/* Placeholder para outros alertas */}
               <li className="flex items-center text-green-500">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 IPVA Pago (2024)
