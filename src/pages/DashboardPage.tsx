@@ -49,7 +49,7 @@ const DashboardPage: React.FC = () => {
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
       
       {/* Resumo do Veículo */}
-      <VehicleSummary />
+      <VehicleSummary currentMileage={currentMileage} />
 
       {/* Cartões de Métricas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

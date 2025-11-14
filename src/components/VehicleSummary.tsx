@@ -3,13 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Car, Gauge, Calendar, Edit } from 'lucide-react';
 
-const VehicleSummary: React.FC = () => {
+interface VehicleSummaryProps {
+  currentMileage: number;
+}
+
+const VehicleSummary: React.FC<VehicleSummaryProps> = ({ currentMileage }) => {
   // Dados simulados do veículo
   const vehicle = {
     name: "Toyota Corolla",
     year: 2020,
     plate: "ABC-1234",
-    mileage: 45200,
     lastService: "2024-05-10",
   };
 
@@ -38,7 +41,7 @@ const VehicleSummary: React.FC = () => {
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Quilometragem Atual</p>
           <p className="text-lg font-bold flex items-center dark:text-white">
             <Gauge className="w-4 h-4 mr-2 text-blue-500" />
-            {vehicle.mileage.toLocaleString('pt-BR')} km
+            {currentMileage.toLocaleString('pt-BR')} km
           </p>
         </div>
         <div className="md:col-span-3">
