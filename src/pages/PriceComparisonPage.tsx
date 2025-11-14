@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Map, Fuel, Loader2, LocateFixed, TrendingDown, TrendingUp, DollarSign } from 'lucide-react';
+import { Map, Fuel, Loader2, LocateFixed, TrendingDown, TrendingUp, DollarSign, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label'; // Importação adicionada
 import { showError } from '@/utils/toast';
 import { useNearbyStationsQuery, NearbyStation } from '@/hooks/useNearbyStations';
 import { FuelingRecord } from '@/types/fueling';
