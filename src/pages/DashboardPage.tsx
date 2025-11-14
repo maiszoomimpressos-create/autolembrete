@@ -2,9 +2,10 @@ import React from 'react';
 import MetricCard from '@/components/MetricCard';
 import VehicleSummary from '@/components/VehicleSummary';
 import MonthlySpendingChart from '@/components/MonthlySpendingChart';
+import FuelEfficiencyChart from '@/components/FuelEfficiencyChart'; // Novo Import
 import { DollarSign, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFuelingMetrics } from '@/hooks/useFuelingMetrics'; // Importando o hook
+import { useFuelingMetrics } from '@/hooks/useFuelingMetrics';
 
 const DashboardPage: React.FC = () => {
   const { averageEfficiency } = useFuelingMetrics();
@@ -56,12 +57,15 @@ const DashboardPage: React.FC = () => {
         />
       </div>
 
-      {/* Seção de Alertas e Gráficos */}
+      {/* Seção de Gráficos */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 grid gap-4 md:grid-cols-2">
           <MonthlySpendingChart />
+          <FuelEfficiencyChart />
         </div>
-        <Card className="bg-white p-6 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+        
+        {/* Alertas e Lembretes */}
+        <Card className="bg-white p-6 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 lg:col-span-1">
           <CardHeader className="p-0 mb-4">
             <CardTitle className="text-xl font-semibold dark:text-white">Alertas e Lembretes</CardTitle>
           </CardHeader>
