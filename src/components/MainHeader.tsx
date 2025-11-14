@@ -17,7 +17,7 @@ import {
   Gauge,
   Check,
   ChevronDown,
-  Menu, // Adicionado para o menu mobile
+  Menu,
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
 import { useProfile } from '@/hooks/useProfile';
@@ -38,7 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // Componentes para menu mobile
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface NavItem {
   path: string;
@@ -59,10 +59,8 @@ const MainHeader: React.FC = () => {
   const location = useLocation();
   const { user, signOut, isAdmin } = useSession();
   const { profile } = useProfile();
-  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const [isMileageDialogOpen, setIsMileageDialogOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Estado para o menu mobile
-  const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Hooks de Veículo
   const { vehicle: activeVehicle, vehicles, isLoading: isLoadingVehicle } = useVehicle();
@@ -76,25 +74,8 @@ const MainHeader: React.FC = () => {
   const { alerts: dateAlerts } = useDateAlerts(maintenanceRecords);
   const totalAlerts = mileageAlerts.length + dateAlerts.length;
 
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
-        setIsAvatarMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  const handleAvatarClick = () => {
-    setIsAvatarMenuOpen(!isAvatarMenuOpen);
-  };
-  
   const handleMenuItemClick = (path: string) => {
-    setIsAvatarMenuOpen(false);
+    setIsMobileMenuOpen(false);
     if (path === '/logout') {
         signOut();
         navigate('/');
@@ -138,65 +119,10 @@ const MainHeader: React.FC = () => {
     </div>
   );
 
-  const renderAvatarDropdown = () => (
-    <div ref={avatarMenuRef} className="relative">
-      <Avatar className="cursor-pointer" onClick={handleAvatarClick}>
-        <AvatarImage src={profile.avatarUrl || ""} />
-        <AvatarFallback>{userInitials}</AvatarFallback>
-      </Avatar>
-      {isAvatarMenuOpen && (
-        <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-gray-800 dark:border-gray-700">
-          <div className="py-2">
-            <div className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white truncate border-b dark:border-gray-700">
-                {getDisplayName()}
-            </div>
-            
-            {/* Botão de Administrador Master (Visível apenas para admins) */}
-            {isAdmin && (
-                <>
-                    <button
-                      onClick={() => handleMenuItemClick('/master-admin')}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20 dark:text-red-400"
-                    >
-                      <Shield className="w-4 h-4 text-red-500" />
-                      <span>Admin Master</span>
-                    </button>
-                    <Separator className="my-1 dark:bg-gray-700" />
-                </>
-            )}
-            
-            <button
-              onClick={() => handleMenuItemClick('/settings/profile')}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span>Ver Perfil</span>
-            </button>
-            <button
-              onClick={() => handleMenuItemClick('/settings')}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span>Configurações</span>
-            </button>
-            <Separator className="my-1 dark:bg-gray-700" />
-            <button
-              onClick={() => handleMenuItemClick('/logout')}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20 dark:text-red-400"
-            >
-              <LogOut className="w-4 h-4 text-red-500" />
-              <span>Sair</span>
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-  
-  const renderVehicleSelector = () => {
+  const renderVehicleSelector = (isMobile: boolean) => {
     if (isLoadingVehicle || vehicles.length === 0) {
         return (
-            <Button variant="outline" size="sm" disabled className="dark:hover:bg-gray-700">
+            <Button variant="outline" size="sm" disabled className={isMobile ? "w-full justify-start dark:hover:bg-gray-700" : "dark:hover:bg-gray-700"}>
                 <Car className="w-4 h-4 mr-2" />
                 Carregando...
             </Button>
@@ -205,7 +131,7 @@ const MainHeader: React.FC = () => {
     
     if (vehicles.length === 1) {
         return (
-            <Button variant="outline" size="sm" disabled className="dark:hover:bg-gray-700">
+            <Button variant="outline" size="sm" disabled className={isMobile ? "w-full justify-start dark:hover:bg-gray-700" : "dark:hover:bg-gray-700"}>
                 <Car className="w-4 h-4 mr-2" />
                 {activeVehicle.model}
             </Button>
@@ -216,7 +142,7 @@ const MainHeader: React.FC = () => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="dark:hover:bg-gray-700">
+                <Button variant="outline" size="sm" className={isMobile ? "w-full justify-start dark:hover:bg-gray-700" : "dark:hover:bg-gray-700"}>
                     <Car className="w-4 h-4 mr-2" />
                     {activeVehicle.model}
                     <ChevronDown className="w-4 h-4 ml-2" />
@@ -237,7 +163,10 @@ const MainHeader: React.FC = () => {
                 ))}
                 <DropdownMenuSeparator className="dark:bg-gray-700" />
                 <DropdownMenuItem 
-                    onClick={() => navigate('/settings/vehicle')}
+                    onClick={() => {
+                        navigate('/settings/vehicle');
+                        if (isMobile) setIsMobileMenuOpen(false);
+                    }}
                     className="text-blue-600 dark:text-blue-400 cursor-pointer dark:hover:bg-gray-700"
                 >
                     <Settings className="w-4 h-4 mr-2" />
@@ -247,26 +176,80 @@ const MainHeader: React.FC = () => {
         </DropdownMenu>
     );
   };
+  
+  const renderAvatarDropdown = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Avatar className="cursor-pointer">
+          <AvatarImage src={profile.avatarUrl || ""} />
+          <AvatarFallback>{userInitials}</AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 dark:bg-gray-800 dark:border-gray-700">
+        <DropdownMenuLabel className="text-sm font-medium text-gray-900 dark:text-white truncate border-b dark:border-gray-700">
+            {getDisplayName()}
+        </DropdownMenuLabel>
+        
+        {/* Botão de Administrador Master (Visível apenas para admins) */}
+        {isAdmin && (
+            <>
+                <DropdownMenuItem
+                  onClick={() => handleMenuItemClick('/master-admin')}
+                  className="text-red-600 flex items-center space-x-3 dark:text-red-400 cursor-pointer dark:hover:bg-gray-700"
+                >
+                  <Shield className="w-4 h-4 text-red-500" />
+                  <span>Admin Master</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="dark:bg-gray-700" />
+            </>
+        )}
+        
+        <DropdownMenuItem
+          onClick={() => handleMenuItemClick('/settings/profile')}
+          className="text-gray-700 flex items-center space-x-3 dark:text-gray-200 cursor-pointer dark:hover:bg-gray-700"
+        >
+          <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <span>Ver Perfil</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleMenuItemClick('/settings')}
+          className="text-gray-700 flex items-center space-x-3 dark:text-gray-200 cursor-pointer dark:hover:bg-gray-700"
+        >
+          <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <span>Configurações</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="my-1 dark:bg-gray-700" />
+        <DropdownMenuItem
+          onClick={() => handleMenuItemClick('/logout')}
+          className="text-red-600 flex items-center space-x-3 dark:text-red-400 cursor-pointer dark:hover:bg-gray-700"
+        >
+          <LogOut className="w-4 h-4 text-red-500" />
+          <span>Sair</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
 
   return (
     <header className="bg-white shadow-sm border-b dark:bg-gray-900 dark:border-gray-800 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-6 cursor-pointer" onClick={() => navigate('/dashboard')}>
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
             <Car className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Autolembrete</h1>
           </div>
           
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation (Visível apenas em telas maiores que MD) */}
           <nav className="hidden md:flex">
             {renderNavLinks(() => {}, false)}
           </nav>
           
-          <div className="flex items-center space-x-2 sm:space-x-4"> {/* Reduzindo o espaço em mobile */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
             
             {/* Seletor de Veículo (Desktop/Tablet) */}
-            <div className="hidden sm:block">
-                {renderVehicleSelector()}
+            <div className="hidden md:block">
+                {renderVehicleSelector(false)}
             </div>
             
             {/* Botão de Administrador Master (Desktop) */}
@@ -285,7 +268,7 @@ const MainHeader: React.FC = () => {
             {/* Botão de Registro de KM Rápido */}
             <Button
               variant="outline"
-              size="icon" // Usando size="icon" em mobile
+              size="icon"
               className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-700 h-9 w-9 sm:h-10 sm:w-auto"
               onClick={() => setIsMileageDialogOpen(true)}
             >
@@ -296,7 +279,7 @@ const MainHeader: React.FC = () => {
             {/* Botão de Alertas */}
             <Button
               variant="ghost"
-              size="icon" // Usando size="icon" em mobile
+              size="icon"
               className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-800 relative h-9 w-9 sm:h-10 sm:w-10"
               onClick={() => navigate('/alerts')}
             >
@@ -316,7 +299,7 @@ const MainHeader: React.FC = () => {
                 {renderAvatarDropdown()}
             </div>
             
-            {/* Menu Hamburger (Mobile) */}
+            {/* Menu Hamburger (Mobile - Visível em telas menores que MD) */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild className="md:hidden">
                     <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -339,7 +322,7 @@ const MainHeader: React.FC = () => {
                             {/* Seletor de Veículo (Mobile) */}
                             <div className="p-4 border-t dark:border-gray-800">
                                 <h3 className="text-sm font-semibold mb-2 dark:text-white">Veículo Ativo</h3>
-                                {renderVehicleSelector()}
+                                {renderVehicleSelector(true)}
                             </div>
                             
                             {/* Admin Link (Mobile) */}
@@ -347,7 +330,7 @@ const MainHeader: React.FC = () => {
                                 <div className="p-4 border-t dark:border-gray-800">
                                     <Button
                                       variant="ghost"
-                                      className="w-full justify-start text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                      className="w-full justify-start text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:text-red-400"
                                       onClick={() => {
                                           navigate('/master-admin');
                                           setIsMobileMenuOpen(false);
