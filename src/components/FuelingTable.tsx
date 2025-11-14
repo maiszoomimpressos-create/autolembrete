@@ -38,9 +38,9 @@ const FuelingTable: React.FC<FuelingTableProps> = ({ records, onEdit, onDelete }
             <TableHead>KM</TableHead>
             <TableHead>Tipo de Combustível</TableHead>
             <TableHead>Litros</TableHead>
-            <TableHead className="text-right">Custo/L</TableHead>
+            <TableHead className="text-right hidden md:table-cell">Custo/L</TableHead>
             <TableHead className="text-right">Custo Total</TableHead>
-            <TableHead>Posto</TableHead>
+            <TableHead className="hidden md:table-cell">Posto</TableHead>
             <TableHead className="w-[100px] text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -53,13 +53,13 @@ const FuelingTable: React.FC<FuelingTableProps> = ({ records, onEdit, onDelete }
                 <Badge variant="secondary">{record.fuelType}</Badge>
               </TableCell>
               <TableCell>{record.volumeLiters.toFixed(2)} L</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-right hidden md:table-cell">
                 {record.costPerLiter.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </TableCell>
               <TableCell className="text-right font-semibold text-gray-900 dark:text-white">
                 {record.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </TableCell>
-              <TableCell>{record.station}</TableCell>
+              <TableCell className="hidden md:table-cell">{record.station}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end space-x-2">
                   <Button variant="ghost" size="icon" onClick={() => onEdit(record)}>

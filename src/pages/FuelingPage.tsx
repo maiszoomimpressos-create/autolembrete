@@ -60,21 +60,23 @@ const FuelingPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-3">
-          <Fuel className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-3 flex-shrink-0">
+          <Fuel className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-400" />
           <span>Abastecimentos</span>
         </h2>
         <Button 
           onClick={handleOpenDialog}
-          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 flex-shrink-0"
+          size="sm" // Usando tamanho pequeno
           disabled={isMutating}
         >
           {isMutating ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <Loader2 className="w-4 h-4 mr-1 sm:mr-2 animate-spin" />
           ) : (
-            <PlusCircle className="w-4 h-4 mr-2" />
+            <PlusCircle className="w-4 h-4 mr-1 sm:mr-2" />
           )}
-          Adicionar Abastecimento
+          <span className="hidden sm:inline">Adicionar Abastecimento</span>
+          <span className="sm:hidden">Adicionar</span>
         </Button>
       </div>
 
