@@ -26,18 +26,25 @@ const MaintenancePage: React.FC = () => {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MaintenanceRecord | null>(null);
+  const [alertToCreateFrom, setAlertToCreateFrom] = useState<MaintenanceAlert | null>(null); // Novo estado para criação a partir de alerta
 
-  // Efeito para lidar com a navegação de edição do Dashboard
+  // Efeito para lidar com a navegação de edição/criação do Dashboard
   useEffect(() => {
-    const state = location.state as { editRecordId?: string } | undefined;
+    const state = location.state as { editRecordId?: string, createFromAlert?: MaintenanceAlert } | undefined;
+    
     if (state?.editRecordId) {
       const record = records.find(r => r.id === state.editRecordId);
       if (record) {
         handleEdit(record);
       }
-      // Limpa o estado para não reabrir o modal em refresh
-      window.history.replaceState({}, document.title, location.pathname);
+    } else if (state?.createFromAlert) {
+        // Se for um alerta de repetição, preparamos para criar um novo registro
+        setAlertToCreateFrom(state.createFromAlert);
+        setIsDialogOpen(true);
     }
+    
+    // Limpa o estado para não reabrir o modal em refresh
+    window.history.replaceState({}, document.title, location.pathname);
   }, [location.state, records]);
 
 
@@ -52,10 +59,12 @@ const MaintenancePage: React.FC = () => {
       showSuccess('Nova manutenção adicionada!');
     }
     setRecordToEdit(null);
+    setAlertToCreateFrom(null); // Limpa o alerta após submissão
   };
 
   const handleEdit = (record: MaintenanceRecord) => {
     setRecordToEdit(record);
+    setAlertToCreateFrom(null); // Garante que não estamos em modo de criação por alerta
     setIsDialogOpen(true);
   };
 
@@ -82,6 +91,7 @@ const MaintenancePage: React.FC = () => {
 
   const handleOpenDialog = () => {
     setRecordToEdit(null);
+    setAlertToCreateFrom(null);
     setIsDialogOpen(true);
   };
   
@@ -141,6 +151,7 @@ const MaintenancePage: React.FC = () => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         recordToEdit={recordToEdit}
+        alertToCreateFrom={alertToCreateFrom} // Passando o novo prop
         onSubmit={handleAddOrEdit}
         currentMileage={currentMileage}
       />

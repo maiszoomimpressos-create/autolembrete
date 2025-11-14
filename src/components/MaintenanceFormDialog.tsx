@@ -9,13 +9,15 @@ import { MaintenanceRecord } from '@/types/maintenance';
 import { Wrench, AlertTriangle, Clock, Gauge } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MaintenanceAlert } from '@/types/alert'; // Novo Import
 
 interface MaintenanceFormDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   recordToEdit: MaintenanceRecord | null;
+  alertToCreateFrom: MaintenanceAlert | null; // Novo prop
   onSubmit: (data: Omit<MaintenanceRecord, 'id'>) => void;
-  currentMileage: number; // Novo prop
+  currentMileage: number;
 }
 
 // Tipo auxiliar para o estado do formulário, incluindo o intervalo
@@ -27,27 +29,32 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   isOpen,
   onOpenChange,
   recordToEdit,
+  alertToCreateFrom,
   onSubmit,
   currentMileage,
 }) => {
   const isEditing = !!recordToEdit;
-  const title = isEditing ? 'Editar Manutenção' : 'Adicionar Nova Manutenção';
+  const isCreatingFromAlert = !!alertToCreateFrom;
+  const title = isEditing ? 'Editar Manutenção' : (isCreatingFromAlert ? 'Registrar Manutenção Recorrente' : 'Adicionar Nova Manutenção');
 
-  // Inicializa o estado do formulário
-  const [formData, setFormData] = React.useState<FormDataState>({
-    date: recordToEdit?.date || new Date().toISOString().split('T')[0],
-    mileage: recordToEdit?.mileage || 0,
-    type: recordToEdit?.type || 'Troca de Óleo',
-    customType: recordToEdit?.customType || '',
-    description: recordToEdit?.description || '',
-    cost: recordToEdit?.cost || 0,
-    status: recordToEdit?.status || 'Concluído',
-    nextMileageInterval: recordToEdit?.nextMileageInterval || undefined, // Usando o novo campo
-    nextDate: recordToEdit?.nextDate || undefined,
-  });
+  // Estado inicial padrão
+  const initialFormData: FormDataState = {
+    date: new Date().toISOString().split('T')[0],
+    mileage: currentMileage,
+    type: 'Troca de Óleo',
+    customType: '',
+    description: '',
+    cost: 0,
+    status: 'Concluído',
+    nextMileageInterval: undefined,
+    nextDate: undefined,
+  };
+
+  const [formData, setFormData] = React.useState<FormDataState>(initialFormData);
 
   React.useEffect(() => {
     if (recordToEdit) {
+      // Modo Edição
       setFormData({
         date: recordToEdit.date,
         mileage: recordToEdit.mileage,
@@ -59,20 +66,38 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         nextMileageInterval: recordToEdit.nextMileageInterval || undefined,
         nextDate: recordToEdit.nextDate || undefined,
       });
+    } else if (alertToCreateFrom) {
+        // Modo Criação a partir de Alerta (Pré-preenchimento)
+        // O ID do alerta contém o ID do registro original (ex: '1-mileage')
+        const originalRecordId = alertToCreateFrom.id.split('-')[0];
+        
+        // Como não temos acesso direto ao registro original aqui, vamos simular o pré-preenchimento
+        // com base no tipo e nos intervalos do alerta, assumindo que o tipo é o mesmo.
+        
+        // Nota: Em um sistema real, buscaríamos o registro original pelo ID.
+        // Aqui, vamos usar valores padrão e o tipo do alerta.
+        
+        const typeFromAlert = alertToCreateFrom.type as MaintenanceRecord['type'];
+        
+        setFormData({
+            date: new Date().toISOString().split('T')[0],
+            mileage: currentMileage, // Sugere o KM atual
+            type: typeFromAlert,
+            customType: typeFromAlert === 'Outro' ? alertToCreateFrom.type : '',
+            description: `Serviço de ${alertToCreateFrom.type} realizado.`,
+            cost: 0, // Custo deve ser preenchido
+            status: 'Concluído', // Assume que o usuário está registrando a conclusão
+            
+            // Sugere os intervalos do alerta anterior (se disponíveis)
+            nextMileageInterval: alertToCreateFrom.unit === 'km' ? (alertToCreateFrom.nextTarget as number) - currentMileage : undefined,
+            nextDate: alertToCreateFrom.unit === 'dias' ? alertToCreateFrom.nextTarget as string : undefined,
+        });
+        
     } else {
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        mileage: currentMileage, // Sugere o KM atual
-        type: 'Troca de Óleo',
-        customType: '',
-        description: '',
-        cost: 0,
-        status: 'Concluído',
-        nextMileageInterval: undefined,
-        nextDate: undefined,
-      });
+      // Modo Criação Padrão
+      setFormData(initialFormData);
     }
-  }, [recordToEdit, isOpen, currentMileage]);
+  }, [recordToEdit, alertToCreateFrom, isOpen, currentMileage]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -145,7 +170,10 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
             <span>{title}</span>
           </DialogTitle>
           <DialogDescription className="dark:text-gray-400">
-            Preencha os detalhes da manutenção realizada ou agendada.
+            {isCreatingFromAlert 
+                ? `Registrando a conclusão do serviço de ${alertToCreateFrom?.type}. Confirme os detalhes e defina o próximo alerta.`
+                : 'Preencha os detalhes da manutenção realizada ou agendada.'
+            }
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -185,6 +213,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
               <Select
                 value={formData.type}
                 onValueChange={(value) => handleSelectChange('type', value as MaintenanceRecord['type'])}
+                disabled={isCreatingFromAlert} // Não permite mudar o tipo ao criar a partir de um alerta
               >
                 <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                   <SelectValue placeholder="Selecione o tipo" />
@@ -217,6 +246,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
               <Select
                 value={formData.status}
                 onValueChange={(value) => handleSelectChange('status', value as MaintenanceRecord['status'])}
+                disabled={isCreatingFromAlert} // Ao criar a partir de alerta, o status é sempre Concluído
               >
                 <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                   <SelectValue placeholder="Selecione o status" />
@@ -323,7 +353,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
           </div>
           
           <Button type="submit" className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
-            {isEditing ? 'Salvar Alterações' : 'Adicionar Manutenção'}
+            {isEditing ? 'Salvar Alterações' : 'Registrar Manutenção'}
           </Button>
         </form>
       </DialogContent>

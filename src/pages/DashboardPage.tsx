@@ -84,11 +84,8 @@ const DashboardPage: React.FC = () => {
   };
   
   const handleAlertClick = (alert: MaintenanceAlert) => {
-    // O ID do registro original é a primeira parte do ID do alerta (ex: 'f1-mileage' -> 'f1')
-    const originalRecordId = alert.id.split('-')[0];
-    
-    // Navega para a página de manutenção e passa o ID para abrir o modal de edição
-    navigate('/maintenance', { state: { editRecordId: originalRecordId } });
+    // Navega para a página de manutenção e passa o objeto de alerta para pré-preencher a CRIAÇÃO de um novo registro
+    navigate('/maintenance', { state: { createFromAlert: alert } });
   };
 
 
