@@ -15,6 +15,8 @@ import {
   Fuel,
   Shield,
   Gauge,
+  Check,
+  ChevronDown,
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
 import { useProfile } from '@/hooks/useProfile';
@@ -25,6 +27,16 @@ import { useMileageAlerts } from '@/hooks/useMileageAlerts';
 import { useDateAlerts } from '@/hooks/useDateAlerts';
 import { Badge } from '@/components/ui/badge';
 import MileageInputDialog from './MileageInputDialog';
+import { useVehicle } from '@/hooks/useVehicle'; // Importando useVehicle
+import { useActiveVehicle } from '@/hooks/useActiveVehicle'; // Importando useActiveVehicle
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavItem {
   path: string;
@@ -49,6 +61,10 @@ const MainHeader: React.FC = () => {
   const [isMileageDialogOpen, setIsMileageDialogOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   
+  // Hooks de Veículo
+  const { vehicle: activeVehicle, vehicles, isLoading: isLoadingVehicle } = useVehicle();
+  const { setActiveVehicle } = useActiveVehicle();
+
   // Hooks de Alerta
   const { records: maintenanceRecords } = useMaintenanceRecords();
   const { records: fuelingRecords } = useFuelingRecords();
@@ -150,6 +166,61 @@ const MainHeader: React.FC = () => {
       )}
     </div>
   );
+  
+  const renderVehicleSelector = () => {
+    if (isLoadingVehicle || vehicles.length === 0) {
+        return (
+            <Button variant="outline" size="sm" disabled className="dark:hover:bg-gray-700">
+                <Car className="w-4 h-4 mr-2" />
+                Carregando...
+            </Button>
+        );
+    }
+    
+    if (vehicles.length === 1) {
+        return (
+            <Button variant="outline" size="sm" disabled className="dark:hover:bg-gray-700">
+                <Car className="w-4 h-4 mr-2" />
+                {activeVehicle.model}
+            </Button>
+        );
+    }
+    
+    // Se houver múltiplos veículos, exibe o Dropdown
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="dark:hover:bg-gray-700">
+                    <Car className="w-4 h-4 mr-2" />
+                    {activeVehicle.model}
+                    <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 dark:bg-gray-800 dark:border-gray-700">
+                <DropdownMenuLabel className="text-sm font-semibold dark:text-white">Veículo Ativo</DropdownMenuLabel>
+                <DropdownMenuSeparator className="dark:bg-gray-700" />
+                {vehicles.map((v) => (
+                    <DropdownMenuItem 
+                        key={v.id}
+                        onClick={() => setActiveVehicle(v.id)}
+                        className="flex items-center justify-between cursor-pointer dark:hover:bg-gray-700"
+                    >
+                        <span className="truncate">{v.model} ({v.plate})</span>
+                        {v.id === activeVehicle.id && <Check className="w-4 h-4 text-blue-500 ml-2" />}
+                    </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator className="dark:bg-gray-700" />
+                <DropdownMenuItem 
+                    onClick={() => navigate('/settings/vehicle')}
+                    className="text-blue-600 dark:text-blue-400 cursor-pointer dark:hover:bg-gray-700"
+                >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Gerenciar Veículos
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+  };
 
   return (
     <header className="bg-white shadow-sm border-b dark:bg-gray-900 dark:border-gray-800 sticky top-0 z-40">
@@ -177,7 +248,11 @@ const MainHeader: React.FC = () => {
             })}
           </nav>
           <div className="flex items-center space-x-4">
-            {/* Botão de Administrador Master na barra de navegação principal (opcional, mas útil) */}
+            
+            {/* Seletor de Veículo */}
+            {renderVehicleSelector()}
+            
+            {/* Botão de Administrador Master (opcional, mas útil) */}
             {isAdmin && (
                 <Button
                   variant="ghost"
