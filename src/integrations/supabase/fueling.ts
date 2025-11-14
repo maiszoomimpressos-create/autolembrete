@@ -5,6 +5,7 @@ import { useSession } from '@/components/SessionContextProvider';
 import { showError } from '@/utils/toast';
 
 const FUELING_RECORDS_KEY = 'fueling_records';
+const MILEAGE_RECORDS_KEY = 'mileage_records'; // Adicionado
 
 // --- Helpers de Conversão ---
 
@@ -74,6 +75,8 @@ export const useFuelingMutations = () => {
 
   const invalidateQuery = () => {
     queryClient.invalidateQueries({ queryKey: [FUELING_RECORDS_KEY, userId] });
+    // Invalida queries de quilometragem para recalcular o KM atual
+    queryClient.invalidateQueries({ queryKey: [MILEAGE_RECORDS_KEY, userId] });
   };
 
   const addRecordMutation = useMutation<FuelingRecord, Error, Omit<FuelingRecord, 'id'>>({
