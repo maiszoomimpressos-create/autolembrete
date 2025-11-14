@@ -13,9 +13,10 @@ import {
   User,
   LogOut,
   Fuel,
-  Shield, // Novo Import
+  Shield,
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
+import { useProfile } from '@/hooks/useProfile'; // Novo Import
 
 interface NavItem {
   path: string;
@@ -34,13 +35,14 @@ const navItems: NavItem[] = [
 const MainHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut, isAdmin } = useSession(); // Usando isAdmin
+  const { user, signOut, isAdmin } = useSession();
+  const { profile } = useProfile(); // Usando o hook de perfil
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
+      if (avatarMenuRef.current && !avatarMenuMenuRef.current.contains(event.target as Node)) {
         setIsAvatarMenuOpen(false);
       }
     };
@@ -53,30 +55,30 @@ const MainHeader: React.FC = () => {
   const handleAvatarClick = () => {
     setIsAvatarMenuOpen(!isAvatarMenuOpen);
   };
-
-  const handleMenuItemClick = async (path: string) => {
-    if (path === '/logout') {
-      await signOut();
-      navigate('/');
-    } else {
-      navigate(path);
-    }
-    setIsAvatarMenuOpen(false);
-  };
   
-  const userInitials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'JD';
+  const getDisplayName = () => {
+      if (profile.firstName) {
+          const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ');
+          return fullName.length > 20 ? profile.firstName : fullName;
+      }
+      return user?.email || 'Usuário';
+  };
+
+  const userInitials = profile.firstName 
+    ? profile.firstName.substring(0, 1).toUpperCase() + (profile.lastName ? profile.lastName.substring(0, 1).toUpperCase() : '')
+    : user?.email ? user.email.substring(0, 2).toUpperCase() : 'JD';
 
   const renderAvatarDropdown = () => (
     <div ref={avatarMenuRef} className="relative">
       <Avatar className="cursor-pointer" onClick={handleAvatarClick}>
-        <AvatarImage src="" />
+        <AvatarImage src={profile.avatarUrl || ""} />
         <AvatarFallback>{userInitials}</AvatarFallback>
       </Avatar>
       {isAvatarMenuOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-gray-800 dark:border-gray-700">
           <div className="py-2">
             <div className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white truncate border-b dark:border-gray-700">
-                {user?.email || 'Usuário'}
+                {getDisplayName()}
             </div>
             
             {/* Botão de Administrador Master (Visível apenas para admins) */}
