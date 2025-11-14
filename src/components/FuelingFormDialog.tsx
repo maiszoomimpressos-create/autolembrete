@@ -75,26 +75,27 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
+    const parsedValue = parseFloat(value) || 0;
     
     setFormData(prev => {
       let newFormData = { ...prev, [id]: value };
 
       if (id === 'mileage') {
         newFormData.mileage = parseInt(value) || 0;
-      } else if (id === 'volumeLiters' || id === 'costPerLiter') {
-        const liters = id === 'volumeLiters' ? parseFloat(value) || 0 : prev.volumeLiters;
-        const costPerL = id === 'costPerLiter' ? parseFloat(value) || 0 : prev.costPerLiter;
-        
-        newFormData.volumeLiters = liters;
-        newFormData.costPerLiter = costPerL;
-        newFormData.totalCost = calculateTotalCost(liters, costPerL);
+      } else if (id === 'volumeLiters') {
+        newFormData.volumeLiters = parsedValue;
+        // Se Litros mudar, recalcula Custo Total
+        newFormData.totalCost = calculateTotalCost(parsedValue, prev.costPerLiter);
+      } else if (id === 'costPerLiter') {
+        newFormData.costPerLiter = parsedValue;
+        // Se Custo/L mudar, recalcula Custo Total
+        newFormData.totalCost = calculateTotalCost(prev.volumeLiters, parsedValue);
       } else if (id === 'totalCost') {
-        // Se o usuário preencher o custo total, recalcula o custo por litro
-        const total = parseFloat(value) || 0;
-        const liters = prev.volumeLiters;
-        
-        newFormData.totalCost = total;
-        newFormData.costPerLiter = calculateCostPerLiter(total, liters);
+        newFormData.totalCost = parsedValue;
+        // Se Custo Total mudar, recalcula Custo/L
+        newFormData.costPerLiter = calculateCostPerLiter(parsedValue, prev.volumeLiters);
+      } else if (id === 'station' || id === 'date') {
+        (newFormData as any)[id] = value;
       }
 
       return newFormData;
@@ -113,6 +114,11 @@ const FuelingFormDialog: React.FC<FuelingFormDialogProps> = ({
     
     if (activeVehicle.id === '') {
         showError("Por favor, cadastre um veículo antes de registrar o abastecimento.");
+        return;
+    }
+    
+    if (formData.mileage <= 0 || formData.volumeLiters <= 0 || formData.totalCost <= 0) {
+        showError("Por favor, preencha KM, Litros e Custo Total com valores válidos.");
         return;
     }
     

@@ -25,6 +25,17 @@ const calculateEfficiency = (distance: number, volume: number): number | null =>
     return null;
 };
 
+const calculateTotalCost = (liters: number, costPerL: number) => {
+    return parseFloat((liters * costPerL).toFixed(2));
+};
+
+const calculateCostPerLiter = (totalCost: number, liters: number) => {
+    if (liters > 0) {
+        return parseFloat((totalCost / liters).toFixed(2));
+    }
+    return 0;
+};
+
 const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel }) => {
   const { vehicle: activeVehicle } = useVehicle(); // Obter veículo ativo
   const [initialMileage, setInitialMileage] = useState<number>(0); // KM Inicial da Viagem
@@ -98,37 +109,27 @@ const TripFuelingForm: React.FC<TripFuelingFormProps> = ({ onSubmit, onCancel })
     }
   };
 
-  const calculateTotalCost = (liters: number, costPerL: number) => {
-    return parseFloat((liters * costPerL).toFixed(2));
-  };
-  
-  const calculateCostPerLiter = (totalCost: number, liters: number) => {
-    if (liters > 0) {
-      return parseFloat((totalCost / liters).toFixed(2));
-    }
-    return 0;
-  };
-
   const handleChange = (index: number, id: keyof TripRecord, value: string | number) => {
+    const parsedValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
+    
     setTripRecords(prev => {
       const newRecords = [...prev];
       let record = newRecords[index];
 
       if (id === 'mileage') {
         record.mileage = parseInt(value as string) || 0;
-      } else if (id === 'volumeLiters' || id === 'costPerLiter') {
-        const liters = id === 'volumeLiters' ? parseFloat(value as string) || 0 : record.volumeLiters;
-        const costPerL = id === 'costPerLiter' ? parseFloat(value as string) || 0 : record.costPerLiter;
-        
-        record.volumeLiters = liters;
-        record.costPerLiter = costPerL;
-        record.totalCost = calculateTotalCost(liters, costPerL);
+      } else if (id === 'volumeLiters') {
+        record.volumeLiters = parsedValue as number;
+        // Se Litros mudar, recalcula Custo Total
+        record.totalCost = calculateTotalCost(record.volumeLiters, record.costPerLiter);
+      } else if (id === 'costPerLiter') {
+        record.costPerLiter = parsedValue as number;
+        // Se Custo/L mudar, recalcula Custo Total
+        record.totalCost = calculateTotalCost(record.volumeLiters, record.costPerLiter);
       } else if (id === 'totalCost') {
-        const total = parseFloat(value as string) || 0;
-        const liters = record.volumeLiters;
-        
-        record.totalCost = total;
-        record.costPerLiter = calculateCostPerLiter(total, liters);
+        record.totalCost = parsedValue as number;
+        // Se Custo Total mudar, recalcula Custo/L
+        record.costPerLiter = calculateCostPerLiter(record.totalCost, record.volumeLiters);
       } else if (id === 'fuelType' || id === 'station' || id === 'date') {
         (record as any)[id] = value;
       }
