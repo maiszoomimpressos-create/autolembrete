@@ -229,6 +229,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                  {/* Usando allServiceTypes que inclui 'Outro' */}
                   {allServiceTypes.map(type => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}

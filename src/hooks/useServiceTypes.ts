@@ -13,7 +13,7 @@ const DEFAULT_SERVICE_TYPES: MaintenanceRecord['type'][] = [
 export const useServiceTypes = () => {
     const { data: customTypes = [], isLoading, error } = useServiceTypesQuery();
 
-    const allServiceTypes = useMemo(() => {
+    const baseServiceTypes = useMemo(() => {
         // 1. Adiciona os tipos padrão
         const types: string[] = [...DEFAULT_SERVICE_TYPES];
         
@@ -24,14 +24,17 @@ export const useServiceTypes = () => {
             }
         });
         
-        // 3. Adiciona a opção 'Outro' por último
-        types.push('Outro');
-        
         return types;
     }, [customTypes]);
+    
+    const allServiceTypesWithOther = useMemo(() => {
+        // 3. Adiciona a opção 'Outro' por último
+        return [...baseServiceTypes, 'Outro'];
+    }, [baseServiceTypes]);
 
     return {
-        allServiceTypes,
+        baseServiceTypes, // Tipos padrão + personalizados (sem 'Outro')
+        allServiceTypes: allServiceTypesWithOther, // Tipos padrão + personalizados + 'Outro'
         isLoading,
         error,
         customTypes,
