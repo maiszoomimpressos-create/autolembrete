@@ -11,13 +11,15 @@ import { showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useVehicle } from '@/hooks/useVehicle';
 import { cn } from '@/lib/utils';
+import { MaintenanceAlert } from '@/types/alert'; // Importando MaintenanceAlert
 
 interface MaintenanceFormDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   recordToEdit: MaintenanceRecord | null;
+  alertToCreateFrom: MaintenanceAlert | null; // Novo prop
   onSubmit: (data: Omit<MaintenanceRecord, 'id'>) => void;
-  currentMileage: number; // Novo prop
+  currentMileage: number;
 }
 
 // Tipo auxiliar para o estado do formulário, incluindo o intervalo
@@ -29,18 +31,21 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   isOpen,
   onOpenChange,
   recordToEdit,
+  alertToCreateFrom, // Recebendo o alerta
   onSubmit,
-  currentMileage, // Recebendo o KM atual
+  currentMileage,
 }) => {
-  const { vehicle: activeVehicle, vehicles } = useVehicle();
+  // Corrigido: useVehicle retorna apenas 'vehicle', não 'vehicles'
+  const { vehicle: activeVehicle } = useVehicle(); 
   const isEditing = !!recordToEdit;
   const title = isEditing ? 'Editar Manutenção' : 'Adicionar Nova Manutenção';
-  const hasMultipleVehicles = vehicles.length > 1;
+  // Como só suportamos um veículo, esta variável é sempre falsa
+  const hasMultipleVehicles = false; 
 
   // Estado inicial padrão
   const initialFormData: FormDataState = {
     date: new Date().toISOString().split('T')[0],
-    mileage: currentMileage, // Usando o KM atual como padrão
+    mileage: currentMileage,
     type: 'Troca de Óleo',
     customType: '',
     description: '',
@@ -48,7 +53,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     status: 'Concluído',
     nextMileageInterval: undefined,
     nextDate: undefined,
-    vehicleId: activeVehicle.id, // Garante que o ID do veículo ativo seja usado
+    vehicleId: activeVehicle.id,
   };
 
   const [formData, setFormData] = React.useState<FormDataState>(initialFormData);
@@ -68,15 +73,33 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         nextDate: recordToEdit.nextDate || undefined,
         vehicleId: recordToEdit.vehicleId,
       });
+    } else if (alertToCreateFrom) {
+        // Modo Criação a partir de Alerta de Repetição
+        const isKmAlert = alertToCreateFrom.unit === 'km';
+        
+        setFormData({
+            ...initialFormData,
+            // Preenche o tipo e o KM atual
+            type: alertToCreateFrom.type as FormDataState['type'],
+            customType: alertToCreateFrom.type, // Usamos o nome do alerta como customType por segurança
+            mileage: currentMileage,
+            description: `Registro de manutenção acionado pelo alerta de repetição: ${alertToCreateFrom.type}.`,
+            status: 'Concluído', // Ao criar a partir de um alerta, geralmente é para concluir o serviço
+            
+            // Se for alerta de KM, preenche o intervalo para o próximo
+            nextMileageInterval: isKmAlert ? (alertToCreateFrom.nextTarget as number) - currentMileage : undefined,
+            // Se for alerta de Data, preenche a próxima data
+            nextDate: !isKmAlert ? (alertToCreateFrom.nextTarget as string) : undefined,
+        });
     } else {
-      // Modo Criação Padrão: Atualiza o KM inicial e o veículo ativo se o modal for aberto
+      // Modo Criação Padrão
       setFormData({
         ...initialFormData,
         mileage: currentMileage,
         vehicleId: activeVehicle.id,
       });
     }
-  }, [recordToEdit, isOpen, currentMileage, activeVehicle.id]);
+  }, [recordToEdit, isOpen, currentMileage, activeVehicle.id, alertToCreateFrom]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -132,6 +155,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         ...formData,
         nextMileage: finalNextMileage, // KM alvo calculado
         nextMileageInterval: formData.nextMileageInterval, // Mantém o intervalo para referência
+        vehicleId: activeVehicle.id, // Garante que o ID do veículo seja enviado
     };
 
     onSubmit(dataToSubmit);

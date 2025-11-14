@@ -171,7 +171,7 @@ const MaintenancePage: React.FC = () => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         recordToEdit={recordToEdit}
-        alertToCreateFrom={alertToCreateFrom}
+        alertToCreateFrom={alertToCreateFrom} // Passando o novo prop
         onSubmit={handleAddOrEdit}
         currentMileage={currentMileage}
       />

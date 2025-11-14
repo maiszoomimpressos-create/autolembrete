@@ -10,6 +10,7 @@ export interface MaintenanceRecord {
   nextMileage?: number; // next_mileage
   nextMileageInterval?: number; // next_mileage_interval
   nextDate?: string; // next_date
+  vehicleId?: string; // vehicle_id
 }
 
 // Tipo para inserção no Supabase (snake_case)
@@ -25,4 +26,5 @@ export interface MaintenanceRecordInsert {
   next_mileage?: number;
   next_mileage_interval?: number;
   next_date?: string;
+  vehicle_id?: string; // vehicle_id
 }

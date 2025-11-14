@@ -21,6 +21,7 @@ const fromDb = (record: any): MaintenanceRecord => ({
   nextMileage: record.next_mileage,
   nextMileageInterval: record.next_mileage_interval,
   nextDate: record.next_date,
+  vehicleId: record.vehicle_id, // Adicionado
 });
 
 // Converte do formato do Frontend (camelCase) para o formato de Inserção/Atualização do DB (snake_case)
@@ -36,6 +37,7 @@ const toDbInsert = (record: Omit<MaintenanceRecord, 'id'>, userId: string): Main
   next_mileage: record.nextMileage,
   next_mileage_interval: record.nextMileageInterval,
   next_date: record.nextDate,
+  vehicle_id: record.vehicleId, // Adicionado
 });
 
 // --- Funções de Busca ---
