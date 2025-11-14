@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useVehicle, VehicleData } from '@/hooks/useVehicle';
-import { useActiveVehicle } from '@/hooks/useActiveVehicle';
+import { useActiveVehicle } from '@/hooks/useActiveVehicle'; // Novo Import
 import { showSuccess, showError } from '@/utils/toast';
 import { Loader2, Car, Check, PlusCircle } from 'lucide-react';
 import { useMileageRecords } from '@/hooks/useMileageRecords';
@@ -16,10 +16,8 @@ import { cn } from '@/lib/utils';
 type VehicleFormState = Omit<VehicleData, 'id'>;
 
 const VehicleSettings: React.FC = () => {
-  // Use useVehicle for active vehicle details and mutations
   const { vehicle: activeVehicle, vehicles, updateVehicle, removeVehicle, isLoading: isLoadingVehicle } = useVehicle();
-  // Use useActiveVehicle for managing the list and setting the active ID
-  const { setActiveVehicle } = useActiveVehicle(); 
+  const { setActiveVehicle } = useActiveVehicle(); // Para mudar o veículo ativo
   
   // Hooks para gerenciar KM
   const { records: fuelingRecords } = useFuelingRecords();
@@ -27,7 +25,7 @@ const VehicleSettings: React.FC = () => {
   
   const isMutating = isLoadingVehicle || isMileageMutating;
   const isNewVehicle = activeVehicle.id === '';
-  const hasMultipleVehicles = vehicles.length > 1; // Used for UI display
+  const hasMultipleVehicles = vehicles.length > 1;
 
   const [formData, setFormData] = useState<VehicleFormState>({
     model: activeVehicle.model,
@@ -38,19 +36,15 @@ const VehicleSettings: React.FC = () => {
   const [isAddingNew, setIsAddingNew] = useState(false); // Estado para o formulário de adição
 
   useEffect(() => {
-    // Atualiza o formulário quando o veículo ativo muda OU quando saímos do modo de adição
-    if (!isAddingNew) {
-        setFormData({
-          model: activeVehicle.model,
-          year: activeVehicle.year,
-          plate: activeVehicle.plate,
-        });
-    }
+    // Atualiza o formulário quando o veículo ativo muda
+    setFormData({
+      model: activeVehicle.model,
+      year: activeVehicle.year,
+      plate: activeVehicle.plate,
+    });
     // Reseta o KM inicial se estivermos editando um veículo existente
-    if (!isAddingNew && activeVehicle.id !== '') {
-        setInitialMileage(0);
-    }
-  }, [activeVehicle, isAddingNew]);
+    setInitialMileage(0);
+  }, [activeVehicle]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -83,12 +77,12 @@ const VehicleSettings: React.FC = () => {
 
     // 1. Atualiza/Insere o veículo
     const vehicleId = isCreating ? undefined : activeVehicle.id;
-    await updateVehicle({ ...formData, vehicleId });
+    await updateVehicle(formData);
     
     // 2. Se for um novo veículo e tivermos um KM inicial, registramos o KM
     if (isCreating && initialMileage > 0) {
         const today = new Date().toISOString().split('T')[0];
-        // O addManualRecord usará o veículo ativo. Se for um novo veículo,
+        // Nota: O addManualRecord usará o veículo ativo. Se for um novo veículo,
         // o useVehicle já terá atualizado o activeVehicle para o recém-criado após a mutação.
         await addManualRecord(today, initialMileage);
         showSuccess(`Quilometragem inicial (${initialMileage.toLocaleString('pt-BR')} km) registrada.`);
@@ -99,7 +93,7 @@ const VehicleSettings: React.FC = () => {
   
   const handleRemoveVehicle = () => {
     if (vehicles.length <= 1) {
-        showError("Você deve ter pelo menos um veículo ativo. Por favor, adicione outro veículo antes de remover este.");
+        showError("Você não pode remover o único veículo cadastrado.");
         return;
     }
     if (window.confirm(`Tem certeza que deseja remover o veículo ${activeVehicle.model} (${activeVehicle.plate})? Esta ação é permanente e removerá todos os registros de manutenção e abastecimento associados.`)) {
@@ -109,14 +103,18 @@ const VehicleSettings: React.FC = () => {
   
   const handleStartAddNew = () => {
       setIsAddingNew(true);
-      // Limpa o formulário para o novo veículo
       setFormData({ model: '', year: new Date().getFullYear(), plate: '' });
       setInitialMileage(0);
   };
   
   const handleCancelAddNew = () => {
       setIsAddingNew(false);
-      // Volta para o veículo ativo atual (o useEffect cuidará de carregar os dados)
+      // Volta para o veículo ativo atual
+      setFormData({
+        model: activeVehicle.model,
+        year: activeVehicle.year,
+        plate: activeVehicle.plate,
+      });
   };
   
   const handleSelectVehicle = (id: string) => {
@@ -134,7 +132,7 @@ const VehicleSettings: React.FC = () => {
   }
   
   const isEditingExisting = activeVehicle.id !== '' && !isAddingNew;
-  const isCreating = isAddingNew || isNewVehicle; // True se estiver adicionando um novo ou se não houver nenhum
+  const isCreating = isAddingNew || isNewVehicle;
 
   return (
     <Card className="shadow-none border-none dark:bg-transparent">

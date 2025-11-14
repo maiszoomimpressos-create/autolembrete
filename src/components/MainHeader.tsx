@@ -17,7 +17,7 @@ import {
   Gauge,
   Check,
   ChevronDown,
-  Menu,
+  Menu, // Adicionado para o menu mobile
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
 import { useProfile } from '@/hooks/useProfile';
@@ -38,7 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // Componentes para menu mobile
 
 interface NavItem {
   path: string;
@@ -51,7 +51,6 @@ const navItems: NavItem[] = [
   { path: '/maintenance', label: 'Manutenções', icon: Wrench },
   { path: '/fueling', label: 'Abastecimentos', icon: Fuel },
   { path: '/history', label: 'Histórico', icon: History },
-  { path: '/alerts', label: 'Alertas', icon: Bell }, // Adicionado Alertas aqui para o menu
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
 
@@ -60,8 +59,10 @@ const MainHeader: React.FC = () => {
   const location = useLocation();
   const { user, signOut, isAdmin } = useSession();
   const { profile } = useProfile();
+  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const [isMileageDialogOpen, setIsMileageDialogOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Estado para o menu mobile
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
   
   // Hooks de Veículo
   const { vehicle: activeVehicle, vehicles, isLoading: isLoadingVehicle } = useVehicle();
@@ -75,9 +76,25 @@ const MainHeader: React.FC = () => {
   const { alerts: dateAlerts } = useDateAlerts(maintenanceRecords);
   const totalAlerts = mileageAlerts.length + dateAlerts.length;
 
-  // Removendo useEffect e handleAvatarClick, pois o DropdownMenu gerencia o estado de abertura
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
+        setIsAvatarMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleAvatarClick = () => {
+    setIsAvatarMenuOpen(!isAvatarMenuOpen);
+  };
+  
   const handleMenuItemClick = (path: string) => {
+    setIsAvatarMenuOpen(false);
     if (path === '/logout') {
         signOut();
         navigate('/');
@@ -98,47 +115,16 @@ const MainHeader: React.FC = () => {
     ? profile.firstName.substring(0, 1).toUpperCase() + (profile.lastName ? profile.lastName.substring(0, 1).toUpperCase() : '')
     : user?.email ? user.email.substring(0, 2).toUpperCase() : 'JD';
 
-  // Renderiza links de navegação como DropdownMenuItems
-  const renderNavLinksAsDropdown = () => (
-    <>
+  const renderNavLinks = (onLinkClick: () => void, isMobile: boolean) => (
+    <div className={isMobile ? "flex flex-col space-y-1 p-4" : "space-x-8"}>
         {navItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
             const Icon = item.icon;
-            
-            const isAlertsLink = item.path === '/alerts';
-            
-            return (
-                <DropdownMenuItem
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className={`cursor-pointer flex items-center space-x-3 ${isActive ? 'bg-gray-100 dark:bg-gray-700/50' : 'dark:hover:bg-gray-700'}`}
-                >
-                    <Icon className={`w-4 h-4 ${isAlertsLink && totalAlerts > 0 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`} />
-                    <span>{item.label}</span>
-                    {isAlertsLink && totalAlerts > 0 && (
-                        <Badge variant="destructive" className="ml-auto h-4 px-2 text-xs">
-                            {totalAlerts}
-                        </Badge>
-                    )}
-                </DropdownMenuItem>
-            );
-        })}
-    </>
-  );
-  
-  // Renderiza links de navegação como botões para o menu mobile
-  const renderNavLinksAsButtons = (onLinkClick: () => void) => (
-    <div className="flex flex-col space-y-1 p-4">
-        {navItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
-            const Icon = item.icon;
-            const isAlertsLink = item.path === '/alerts';
-            
             return (
                 <Button
                     key={item.path}
                     variant={isActive ? 'default' : 'ghost'}
-                    className={`w-full justify-start !rounded-button ${isActive ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+                    className={`cursor-pointer whitespace-nowrap !rounded-button ${isMobile ? 'w-full justify-start' : ''} ${isActive ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
                     onClick={() => {
                         navigate(item.path);
                         onLinkClick();
@@ -146,11 +132,6 @@ const MainHeader: React.FC = () => {
                 >
                     <Icon className="w-4 h-4 mr-2" />
                     {item.label}
-                    {isAlertsLink && totalAlerts > 0 && (
-                        <Badge variant="destructive" className="ml-auto h-4 px-2 text-xs">
-                            {totalAlerts}
-                        </Badge>
-                    )}
                 </Button>
             );
         })}
@@ -158,57 +139,58 @@ const MainHeader: React.FC = () => {
   );
 
   const renderAvatarDropdown = () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Avatar className="cursor-pointer">
-          <AvatarImage src={profile.avatarUrl || ""} />
-          <AvatarFallback>{userInitials}</AvatarFallback>
-        </Avatar>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 dark:bg-gray-800 dark:border-gray-700">
-        <DropdownMenuLabel className="text-sm font-medium text-gray-900 dark:text-white truncate">
-            {getDisplayName()}
-        </DropdownMenuLabel>
-        
-        <DropdownMenuSeparator className="my-1 dark:bg-gray-700" />
-        
-        {/* Links de Navegação */}
-        {renderNavLinksAsDropdown()}
-        
-        <DropdownMenuSeparator className="my-1 dark:bg-gray-700" />
-        
-        {/* Botão de Administrador Master (Visível apenas para admins) */}
-        {isAdmin && (
-            <>
-                <DropdownMenuItem
-                  onClick={() => handleMenuItemClick('/master-admin')}
-                  className="cursor-pointer flex items-center space-x-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                >
-                  <Shield className="w-4 h-4 text-red-500" />
-                  <span>Admin Master</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="my-1 dark:bg-gray-700" />
-            </>
-        )}
-        
-        {/* Configurações de Perfil e Sair */}
-        <DropdownMenuItem
-          onClick={() => handleMenuItemClick('/settings/profile')}
-          className="cursor-pointer flex items-center space-x-3 dark:hover:bg-gray-700"
-        >
-          <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-          <span>Ver Perfil</span>
-        </DropdownMenuItem>
-        
-        <DropdownMenuItem
-          onClick={() => handleMenuItemClick('/logout')}
-          className="cursor-pointer flex items-center space-x-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-        >
-          <LogOut className="w-4 h-4 text-red-500" />
-          <span>Sair</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div ref={avatarMenuRef} className="relative">
+      <Avatar className="cursor-pointer" onClick={handleAvatarClick}>
+        <AvatarImage src={profile.avatarUrl || ""} />
+        <AvatarFallback>{userInitials}</AvatarFallback>
+      </Avatar>
+      {isAvatarMenuOpen && (
+        <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-gray-800 dark:border-gray-700">
+          <div className="py-2">
+            <div className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white truncate border-b dark:border-gray-700">
+                {getDisplayName()}
+            </div>
+            
+            {/* Botão de Administrador Master (Visível apenas para admins) */}
+            {isAdmin && (
+                <>
+                    <button
+                      onClick={() => handleMenuItemClick('/master-admin')}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20"
+                    >
+                      <Shield className="w-4 h-4 text-red-500" />
+                      <span>Admin Master</span>
+                    </button>
+                    <Separator className="my-1 dark:bg-gray-700" />
+                </>
+            )}
+            
+            <button
+              onClick={() => handleMenuItemClick('/settings/profile')}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
+            >
+              <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <span>Ver Perfil</span>
+            </button>
+            <button
+              onClick={() => handleMenuItemClick('/settings')}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
+            >
+              <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <span>Configurações</span>
+            </button>
+            <Separator className="my-1 dark:bg-gray-700" />
+            <button
+              onClick={() => handleMenuItemClick('/logout')}
+              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 dark:hover:bg-red-900/20"
+            >
+              <LogOut className="w-4 h-4 text-red-500" />
+              <span>Sair</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
   
   const renderVehicleSelector = () => {
@@ -275,8 +257,10 @@ const MainHeader: React.FC = () => {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Autolembrete</h1>
           </div>
           
-          {/* Desktop Navigation - Removida para limpar a barra */}
-          <nav className="hidden md:flex"></nav>
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex">
+            {renderNavLinks(() => {}, false)}
+          </nav>
           
           <div className="flex items-center space-x-4">
             
@@ -284,6 +268,19 @@ const MainHeader: React.FC = () => {
             <div className="hidden sm:block">
                 {renderVehicleSelector()}
             </div>
+            
+            {/* Botão de Administrador Master (Desktop) */}
+            {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="cursor-pointer whitespace-nowrap !rounded-button text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 hidden lg:flex"
+                  onClick={() => navigate('/master-admin')}
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Admin Master
+                </Button>
+            )}
             
             {/* Botão de Registro de KM Rápido (Visível em todas as telas) */}
             <Button
@@ -297,7 +294,7 @@ const MainHeader: React.FC = () => {
               <span className="sm:hidden">KM</span>
             </Button>
             
-            {/* Botão de Alertas (Mantido, mas o link também está no menu do avatar) */}
+            {/* Botão de Alertas */}
             <Button
               variant="ghost"
               size="sm"
@@ -336,9 +333,9 @@ const MainHeader: React.FC = () => {
                             </div>
                         </div>
                         
-                        {/* Links de Navegação (Mobile) */}
+                        {/* Links de Navegação */}
                         <div className="flex-grow overflow-y-auto">
-                            {renderNavLinksAsButtons(() => setIsMobileMenuOpen(false))}
+                            {renderNavLinks(() => setIsMobileMenuOpen(false), true)}
                             
                             {/* Seletor de Veículo (Mobile) */}
                             <div className="p-4 border-t dark:border-gray-800">
