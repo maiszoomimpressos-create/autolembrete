@@ -16,7 +16,13 @@ import {
   Shield,
 } from 'lucide-react';
 import { useSession } from '@/components/SessionContextProvider';
-import { useProfile } from '@/hooks/useProfile'; // Novo Import
+import { useProfile } from '@/hooks/useProfile';
+import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords'; // Novo Import
+import { useFuelingRecords } from '@/hooks/useFuelingRecords'; // Novo Import
+import { useMileageRecords } from '@/hooks/useMileageRecords'; // Novo Import
+import { useMileageAlerts } from '@/hooks/useMileageAlerts'; // Novo Import
+import { useDateAlerts } from '@/hooks/useDateAlerts'; // Novo Import
+import { Badge } from '@/components/ui/badge'; // Novo Import
 
 interface NavItem {
   path: string;
@@ -36,13 +42,21 @@ const MainHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut, isAdmin } = useSession();
-  const { profile } = useProfile(); // Usando o hook de perfil
+  const { profile } = useProfile();
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Hooks de Alerta
+  const { records: maintenanceRecords } = useMaintenanceRecords();
+  const { records: fuelingRecords } = useFuelingRecords();
+  const { currentMileage } = useMileageRecords(fuelingRecords);
+  const { alerts: mileageAlerts } = useMileageAlerts(maintenanceRecords, currentMileage);
+  const { alerts: dateAlerts } = useDateAlerts(maintenanceRecords);
+  const totalAlerts = mileageAlerts.length + dateAlerts.length;
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // CORREÇÃO: Usando avatarMenuRef em vez de avatarMenuMenuRef
       if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target as Node)) {
         setIsAvatarMenuOpen(false);
       }
@@ -172,12 +186,22 @@ const MainHeader: React.FC = () => {
                   Admin Master
                 </Button>
             )}
+            {/* Botão de Alertas */}
             <Button
               variant="ghost"
               size="sm"
-              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-800"
+              className="cursor-pointer whitespace-nowrap !rounded-button dark:hover:bg-gray-800 relative"
+              onClick={() => navigate('/alerts')}
             >
               <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              {totalAlerts > 0 && (
+                <Badge 
+                    variant="destructive" 
+                    className="absolute top-1 right-1 h-4 w-4 p-0 flex items-center justify-center text-xs"
+                >
+                    {totalAlerts}
+                </Badge>
+              )}
             </Button>
             {renderAvatarDropdown()}
           </div>
