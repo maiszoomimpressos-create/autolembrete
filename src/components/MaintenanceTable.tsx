@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Wrench } from 'lucide-react';
 import { MaintenanceRecord } from '@/types/maintenance';
 
 interface MaintenanceTableProps {
