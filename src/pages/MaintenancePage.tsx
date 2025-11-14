@@ -1,23 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Wrench, Loader2 } from 'lucide-react';
 import MaintenanceTable from '@/components/MaintenanceTable';
 import MaintenanceFormDialog from '@/components/MaintenanceFormDialog';
 import { MaintenanceRecord } from '@/types/maintenance';
-import { showError } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
 import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard';
 import { useUpcomingMaintenance } from '@/hooks/useUpcomingMaintenance';
-import { useMileageRecords } from '@/hooks/useMileageRecords';
-import { useFuelingRecords } from '@/hooks/useFuelingRecords';
-import { useLocation } from 'react-router-dom';
-import { useMileageAlerts } from '@/hooks/useMileageAlerts';
-import { useDateAlerts } from '@/hooks/useDateAlerts';
-import { MaintenanceAlert } from '@/types/alert';
+import { useMileageRecords } from '@/hooks/useMileageRecords'; // Novo Import
+import { useFuelingRecords } from '@/hooks/useFuelingRecords'; // Novo Import
 
 const MaintenancePage: React.FC = () => {
-  const location = useLocation();
-  
+  // Hooks para obter o KM atual
   const { records: fuelingRecords } = useFuelingRecords();
   const { currentMileage } = useMileageRecords(fuelingRecords);
 
@@ -26,60 +21,15 @@ const MaintenancePage: React.FC = () => {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState<MaintenanceRecord | null>(null);
-  const [alertToCreateFrom, setAlertToCreateFrom] = useState<MaintenanceAlert | null>(null);
-  
-  // Alertas de Repetição (Manutenções Concluídas que precisam ser refeitas)
-  const { alerts: mileageAlerts } = useMileageAlerts(records, currentMileage);
-  const { alerts: dateAlerts } = useDateAlerts(records);
-  
-  // Combina e ordena todos os alertas de repetição (lógica copiada do DashboardPage)
-  const allRepetitionAlerts = useMemo(() => {
-    const all = [...mileageAlerts, ...dateAlerts];
-    
-    all.sort((a, b) => {
-      if (a.status === 'Atrasado' && b.status !== 'Atrasado') return -1;
-      if (a.status !== 'Atrasado' && b.status === 'Atrasado') return 1;
-      if (a.unit === 'km' && b.unit === 'dias') return -1;
-      if (a.unit === 'dias' && b.unit === 'km') return 1;
-      if (a.status === 'Atrasado') return b.value - a.value;
-      return a.value - b.value;
-    });
-    return all;
-  }, [mileageAlerts, dateAlerts]);
-  
-  const mostUrgentAlert: MaintenanceAlert | null = allRepetitionAlerts.length > 0 ? allRepetitionAlerts[0] : null;
-
-
-  // Efeito para lidar com a navegação de edição/criação do Dashboard
-  useEffect(() => {
-    const state = location.state as { editRecordId?: string, createFromAlert?: MaintenanceAlert } | undefined;
-    
-    if (state?.editRecordId) {
-      const record = records.find(r => r.id === state.editRecordId);
-      if (record) {
-        handleEdit(record);
-      }
-    } else if (state?.createFromAlert) {
-        // Se for um alerta de repetição, preparamos para criar um novo registro
-        setAlertToCreateFrom(state.createFromAlert);
-        setIsDialogOpen(true);
-    }
-    
-    // Limpa o estado para não reabrir o modal em refresh
-    window.history.replaceState({}, document.title, location.pathname);
-  }, [location.state, records]);
-
 
   const handleAddOrEdit = async (data: Omit<MaintenanceRecord, 'id'>) => {
     await addOrUpdateRecord(data, recordToEdit?.id);
     setRecordToEdit(null);
-    setAlertToCreateFrom(null);
     setIsDialogOpen(false);
   };
 
   const handleEdit = (record: MaintenanceRecord) => {
     setRecordToEdit(record);
-    setAlertToCreateFrom(null);
     setIsDialogOpen(true);
   };
 
@@ -103,15 +53,7 @@ const MaintenancePage: React.FC = () => {
 
   const handleOpenDialog = () => {
     setRecordToEdit(null);
-    setAlertToCreateFrom(null);
     setIsDialogOpen(true);
-  };
-  
-  const handleAlertClick = (alert: MaintenanceAlert) => {
-      // Ao clicar em um alerta, abrimos o modal para criar um NOVO registro
-      setAlertToCreateFrom(alert);
-      setRecordToEdit(null);
-      setIsDialogOpen(true);
   };
 
   if (isLoading) {
@@ -146,12 +88,7 @@ const MaintenancePage: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
-          <UpcomingMaintenanceCard 
-            record={upcomingRecord} 
-            fallbackAlert={upcomingRecord ? null : mostUrgentAlert}
-            onEdit={handleEdit} 
-            onAlertClick={handleAlertClick}
-          />
+          <UpcomingMaintenanceCard record={upcomingRecord} onEdit={handleEdit} />
         </div>
         <div className="md:col-span-2 flex items-center justify-center bg-gray-50 border border-dashed rounded-lg dark:bg-gray-800 dark:border-gray-700 p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -171,9 +108,8 @@ const MaintenancePage: React.FC = () => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         recordToEdit={recordToEdit}
-        alertToCreateFrom={alertToCreateFrom}
         onSubmit={handleAddOrEdit}
-        currentMileage={currentMileage}
+        currentMileage={currentMileage} // Passando o KM atual
       />
     </div>
   );
