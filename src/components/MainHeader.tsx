@@ -11,7 +11,6 @@ import {
   Settings,
   Bell,
   User,
-  HelpCircle,
   LogOut,
 } from 'lucide-react';
 
@@ -52,11 +51,7 @@ const MainHeader: React.FC = () => {
 
   const handleMenuItemClick = (path: string) => {
     if (path === '/logout') {
-      // Simulate logout by navigating to the root/login page
       navigate('/');
-    } else if (path === '/help') {
-      // Placeholder for help functionality
-      console.log('Help clicked');
     } else {
       navigate(path);
     }
@@ -86,13 +81,6 @@ const MainHeader: React.FC = () => {
               <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               <span>Configurações</span>
             </button>
-            <button
-              onClick={() => handleMenuItemClick('/help')}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-3 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              <HelpCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span>Ajuda</span>
-            </button>
             <Separator className="my-1 dark:bg-gray-700" />
             <button
               onClick={() => handleMenuItemClick('/logout')}
@@ -108,11 +96,11 @@ const MainHeader: React.FC = () => {
   );
 
   return (
-    <header className="bg-white shadow-sm border-b dark:bg-gray-900 dark:border-gray-800">
+    <header className="bg-white shadow-sm border-b dark:bg-gray-900 dark:border-gray-800 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3">
-            <Car className="w-6 h-6 text-blue-600" />
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+            <Car className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">CarManager</h1>
           </div>
           <nav className="hidden md:flex space-x-2 lg:space-x-8">
