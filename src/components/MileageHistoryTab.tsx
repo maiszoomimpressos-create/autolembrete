@@ -1,5 +1,5 @@
 import React from 'react';
-import { Filter, Gauge } from 'lucide-react';
+import { Filter, Gauge, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFuelingRecords } from '@/hooks/useFuelingRecords';
@@ -8,8 +8,19 @@ import MileageHistoryTable from './MileageHistoryTable';
 
 const MileageHistoryTab: React.FC = () => {
   // Precisamos dos registros de abastecimento para o hook de KM
-  const { records: fuelingRecords } = useFuelingRecords();
-  const { allMileageRecords } = useMileageRecords(fuelingRecords);
+  const { records: fuelingRecords, isLoading: isLoadingFueling } = useFuelingRecords();
+  const { allMileageRecords, isLoading: isLoadingManual } = useMileageRecords(fuelingRecords);
+  
+  const isLoading = isLoadingFueling || isLoadingManual;
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 dark:text-blue-400" />
+        <p className="mt-4">Carregando histórico de quilometragem...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
