@@ -6,9 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MaintenanceRecord } from '@/types/maintenance';
-import { Wrench, AlertTriangle, Clock, Gauge } from 'lucide-react';
+import { Wrench, AlertTriangle, Clock, Gauge, Car } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useVehicle } from '@/hooks/useVehicle';
+import { cn } from '@/lib/utils';
 
 interface MaintenanceFormDialogProps {
   isOpen: boolean;
@@ -30,8 +32,10 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
   onSubmit,
   currentMileage, // Recebendo o KM atual
 }) => {
+  const { vehicle: activeVehicle, vehicles } = useVehicle();
   const isEditing = !!recordToEdit;
   const title = isEditing ? 'Editar Manutenção' : 'Adicionar Nova Manutenção';
+  const hasMultipleVehicles = vehicles.length > 1;
 
   // Estado inicial padrão
   const initialFormData: FormDataState = {
@@ -44,6 +48,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
     status: 'Concluído',
     nextMileageInterval: undefined,
     nextDate: undefined,
+    vehicleId: activeVehicle.id, // Garante que o ID do veículo ativo seja usado
   };
 
   const [formData, setFormData] = React.useState<FormDataState>(initialFormData);
@@ -61,15 +66,17 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
         status: recordToEdit.status,
         nextMileageInterval: recordToEdit.nextMileageInterval || undefined,
         nextDate: recordToEdit.nextDate || undefined,
+        vehicleId: recordToEdit.vehicleId,
       });
     } else {
-      // Modo Criação Padrão: Atualiza o KM inicial se o modal for aberto
+      // Modo Criação Padrão: Atualiza o KM inicial e o veículo ativo se o modal for aberto
       setFormData({
         ...initialFormData,
         mileage: currentMileage,
+        vehicleId: activeVehicle.id,
       });
     }
-  }, [recordToEdit, isOpen, currentMileage]);
+  }, [recordToEdit, isOpen, currentMileage, activeVehicle.id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -96,6 +103,11 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (activeVehicle.id === '') {
+        showError("Por favor, cadastre um veículo antes de registrar a manutenção.");
+        return;
+    }
     
     // 1. Validação para o campo 'Outro'
     if (formData.type === 'Outro' && !formData.customType?.trim()) {
@@ -145,6 +157,23 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
             Preencha os detalhes da manutenção realizada ou agendada.
           </DialogDescription>
         </DialogHeader>
+        
+        {/* Exibição do Veículo Ativo */}
+        <div className={cn(
+            "flex items-center space-x-2 p-3 rounded-md border",
+            hasMultipleVehicles ? "bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700" : "bg-gray-50 dark:bg-gray-800 dark:border-gray-700"
+        )}>
+            <Car className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+            <span className="text-sm font-medium dark:text-white">
+                Veículo Ativo: {activeVehicle.id ? `${activeVehicle.model} (${activeVehicle.plate})` : 'Nenhum Veículo Cadastrado'}
+            </span>
+            {hasMultipleVehicles && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                    (Mude em Configurações > Veículo)
+                </span>
+            )}
+        </div>
+
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           
           {/* Seção de Detalhes Principais */}
@@ -319,7 +348,7 @@ const MaintenanceFormDialog: React.FC<MaintenanceFormDialogProps> = ({
             />
           </div>
           
-          <Button type="submit" className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
+          <Button type="submit" className="mt-4 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800" disabled={activeVehicle.id === ''}>
             {isEditing ? 'Salvar Alterações' : 'Registrar Manutenção'}
           </Button>
         </form>
