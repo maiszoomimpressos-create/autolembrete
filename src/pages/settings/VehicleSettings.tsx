@@ -6,30 +6,33 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useVehicle, VehicleData } from '@/hooks/useVehicle';
 import { showSuccess, showError } from '@/utils/toast';
+import { Loader2 } from 'lucide-react';
+
+// Tipo para o estado local do formulário (apenas campos editáveis)
+type VehicleFormState = Omit<VehicleData, 'id'>;
 
 const VehicleSettings: React.FC = () => {
-  const { vehicle, updateVehicle, removeVehicle } = useVehicle();
-  const [formData, setFormData] = useState<Omit<VehicleData, 'currentMileage' | 'lastService'>>({
+  const { vehicle, updateVehicle, removeVehicle, isLoading, isMutating } = useVehicle();
+  
+  const [formData, setFormData] = useState<VehicleFormState>({
     model: vehicle.model,
     year: vehicle.year,
     plate: vehicle.plate,
   });
-  const [mileageInput, setMileageInput] = useState(vehicle.currentMileage);
 
   useEffect(() => {
+    // Atualiza o formulário quando os dados do veículo mudam (ex: após o carregamento inicial)
     setFormData({
       model: vehicle.model,
       year: vehicle.year,
       plate: vehicle.plate,
     });
-    setMileageInput(vehicle.currentMileage);
   }, [vehicle]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    if (id === 'mileage') {
-      setMileageInput(parseInt(value) || 0);
-    } else if (id === 'year') {
+    
+    if (id === 'year') {
       setFormData(prev => ({ ...prev, year: parseInt(value) || 0 }));
     } else {
       setFormData(prev => ({ ...prev, [id]: value }));
@@ -44,19 +47,24 @@ const VehicleSettings: React.FC = () => {
         return;
     }
 
-    updateVehicle({
-        ...formData,
-        currentMileage: mileageInput,
-    });
-    showSuccess('Detalhes do veículo salvos com sucesso!');
+    // O hook useVehicle agora lida com a persistência
+    updateVehicle(formData);
   };
   
   const handleRemoveVehicle = () => {
-    if (window.confirm('Tem certeza que deseja remover este veículo? Esta ação é permanente.')) {
+    if (window.confirm('Tem certeza que deseja remover este veículo? Esta ação é permanente e removerá todos os registros de manutenção e abastecimento associados.')) {
         removeVehicle();
-        showSuccess('Veículo removido com sucesso.');
     }
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
+        <p className="ml-2 dark:text-white">Carregando configurações do veículo...</p>
+      </div>
+    );
+  }
 
   return (
     <Card className="shadow-none border-none dark:bg-transparent">
@@ -100,37 +108,57 @@ const VehicleSettings: React.FC = () => {
                     required
                 />
               </div>
+              {/* Campo de KM removido, pois é gerenciado pelo useMileageRecords */}
               <div className="space-y-2">
-                <Label htmlFor="mileage">Quilometragem Atual (km)</Label>
+                <Label htmlFor="currentMileage">Quilometragem Atual (km)</Label>
                 <Input 
-                    id="mileage" 
-                    type="number" 
-                    value={mileageInput} 
-                    onChange={handleChange} 
+                    id="currentMileage" 
+                    type="text" 
+                    value="Atualizado no Dashboard" 
                     className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
-                    disabled // Desabilitado, pois o KM deve ser atualizado via Dashboard/Abastecimento
+                    disabled
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                     A quilometragem é atualizada automaticamente via Dashboard ou registros de abastecimento.
                 </p>
               </div>
             </div>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
-              Salvar Detalhes do Veículo
+            <Button 
+                type="submit" 
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                disabled={isMutating}
+            >
+              {isMutating ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                'Salvar Detalhes do Veículo'
+              )}
             </Button>
         </form>
         
-        <Separator className="dark:bg-gray-700" />
-
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold dark:text-white">Remover Veículo</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Esta ação é permanente e removerá todos os registros de manutenção associados.
-          </p>
-          <Button variant="destructive" onClick={handleRemoveVehicle}>
-            Remover Veículo
-          </Button>
-        </div>
+        {vehicle.id !== '' && (
+            <>
+                <Separator className="dark:bg-gray-700" />
+        
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold dark:text-white">Remover Veículo</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Esta ação é permanente e removerá todos os registros de manutenção e abastecimento associados a este veículo.
+                  </p>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleRemoveVehicle}
+                    disabled={isMutating}
+                  >
+                    {isMutating ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                        'Remover Veículo'
+                    )}
+                  </Button>
+                </div>
+            </>
+        )}
       </CardContent>
     </Card>
   );

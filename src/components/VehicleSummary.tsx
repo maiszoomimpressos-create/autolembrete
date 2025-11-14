@@ -1,18 +1,18 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Car, Gauge, Calendar, Edit } from 'lucide-react';
+import { Car, Gauge, Calendar, Edit, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useVehicle } from '@/hooks/useVehicle';
 
 interface VehicleSummaryProps {
   currentMileage: number;
-  lastServiceDate: string | null; // Nova prop
+  lastServiceDate: string | null;
 }
 
 const VehicleSummary: React.FC<VehicleSummaryProps> = ({ currentMileage, lastServiceDate }) => {
   const navigate = useNavigate();
-  const { vehicle } = useVehicle();
+  const { vehicle, isLoading } = useVehicle();
 
   const handleEditClick = () => {
     navigate('/settings/vehicle');
@@ -21,6 +21,15 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ currentMileage, lastSer
   const formattedLastService = lastServiceDate 
     ? new Date(lastServiceDate).toLocaleDateString('pt-BR')
     : 'N/A';
+    
+  if (isLoading) {
+    return (
+      <Card className="col-span-full lg:col-span-2 dark:bg-gray-800 dark:border-gray-700 p-6 flex items-center justify-center h-32">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
+        <p className="ml-2 dark:text-white">Carregando veículo...</p>
+      </Card>
+    );
+  }
 
   return (
     <Card className="col-span-full lg:col-span-2 dark:bg-gray-800 dark:border-gray-700">
