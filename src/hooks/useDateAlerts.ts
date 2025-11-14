@@ -1,13 +1,6 @@
 import { useMemo } from 'react';
 import { MaintenanceRecord } from '@/types/maintenance';
-
-interface DateAlert {
-  id: string;
-  type: string;
-  nextDate: string;
-  status: 'Atrasado' | 'Próximo';
-  daysRemaining: number;
-}
+import { MaintenanceAlert } from '@/types/alert';
 
 const ALERT_THRESHOLD_DAYS = 30; // Alerta se estiver a 30 dias ou menos
 
@@ -18,7 +11,7 @@ export const useDateAlerts = (
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normaliza para comparação de data
 
-    const dateAlerts: DateAlert[] = [];
+    const dateAlerts: MaintenanceAlert[] = [];
 
     maintenanceRecords.forEach(r => {
       if (r.status === 'Concluído' && r.nextDate) {
@@ -35,18 +28,20 @@ export const useDateAlerts = (
           dateAlerts.push({
             id: r.id + '-date',
             type: typeName,
-            nextDate: r.nextDate,
+            nextTarget: r.nextDate,
             status: 'Atrasado',
-            daysRemaining: Math.abs(diffDays),
+            value: Math.abs(diffDays),
+            unit: 'dias',
           });
         } else if (diffDays <= ALERT_THRESHOLD_DAYS) {
           // Próximo
           dateAlerts.push({
             id: r.id + '-date',
             type: typeName,
-            nextDate: r.nextDate,
+            nextTarget: r.nextDate,
             status: 'Próximo',
-            daysRemaining: diffDays,
+            value: diffDays,
+            unit: 'dias',
           });
         }
       }
@@ -57,11 +52,11 @@ export const useDateAlerts = (
         if (a.status === 'Atrasado' && b.status !== 'Atrasado') return -1;
         if (a.status !== 'Atrasado' && b.status === 'Atrasado') return 1;
         
-        // Se ambos são atrasados, o que passou mais tempo (maior daysRemaining) vem primeiro
-        if (a.status === 'Atrasado' && b.status === 'Atrasado') return b.daysRemaining - a.daysRemaining;
+        // Se ambos são atrasados, o que passou mais tempo (maior value) vem primeiro
+        if (a.status === 'Atrasado' && b.status === 'Atrasado') return b.value - a.value;
 
-        // Se ambos são próximos, o que está mais perto (menor daysRemaining) vem primeiro
-        return a.daysRemaining - b.daysRemaining;
+        // Se ambos são próximos, o que está mais perto (menor value) vem primeiro
+        return a.value - b.value;
     });
 
     return {

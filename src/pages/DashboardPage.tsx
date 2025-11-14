@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import MetricCard from '@/components/MetricCard';
 import VehicleSummary from '@/components/VehicleSummary';
 import MonthlySpendingChart from '@/components/MonthlySpendingChart';
@@ -13,9 +13,15 @@ import { useMaintenanceMetrics } from '@/hooks/useMaintenanceMetrics';
 import { useMileageAlerts } from '@/hooks/useMileageAlerts';
 import { useMileageRecords } from '@/hooks/useMileageRecords';
 import { useLastMaintenanceDate } from '@/hooks/useLastMaintenanceDate';
-import { useDateAlerts } from '@/hooks/useDateAlerts'; // Novo Import
+import { useDateAlerts } from '@/hooks/useDateAlerts';
+import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard';
+import { MaintenanceAlert } from '@/types/alert';
+import { useNavigate } from 'react-router-dom';
+import { MaintenanceRecord } from '@/types/maintenance';
 
 const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
+  
   // Dados de Abastecimento
   const { records: fuelingRecords } = useFuelingRecords();
   const { averageEfficiency } = useFuelingMetrics(fuelingRecords);
@@ -24,16 +30,37 @@ const DashboardPage: React.FC = () => {
   const { currentMileage, addManualRecord } = useMileageRecords(fuelingRecords);
 
   // Dados de Manutenção
-  const { records: maintenanceRecords } = useMaintenanceRecords();
+  const { records: maintenanceRecords, addOrUpdateRecord } = useMaintenanceRecords();
   const { totalCost, pendingCount, nextMaintenance } = useMaintenanceMetrics(maintenanceRecords);
   const lastServiceDate = useLastMaintenanceDate(maintenanceRecords);
   
-  // Alertas de KM
+  // Alertas de Repetição (Manutenções Concluídas que precisam ser refeitas)
   const { alerts: mileageAlerts } = useMileageAlerts(maintenanceRecords, currentMileage);
-  
-  // Alertas de Data (Novo)
   const { alerts: dateAlerts } = useDateAlerts(maintenanceRecords);
 
+  // Determina o alerta de repetição mais urgente (se não houver um registro ativo)
+  const mostUrgentAlert: MaintenanceAlert | null = useMemo(() => {
+    const allAlerts = [...mileageAlerts, ...dateAlerts];
+    if (allAlerts.length === 0) return null;
+
+    // Prioridade: Atrasado (KM) > Atrasado (Data) > Próximo (KM) > Próximo (Data)
+    allAlerts.sort((a, b) => {
+      // 1. Atrasado vs Próximo
+      if (a.status === 'Atrasado' && b.status !== 'Atrasado') return -1;
+      if (a.status !== 'Atrasado' && b.status === 'Atrasado') return 1;
+
+      // 2. KM vs Data (KM é geralmente mais crítico)
+      if (a.unit === 'km' && b.unit === 'dias') return -1;
+      if (a.unit === 'dias' && b.unit === 'km') return 1;
+
+      // 3. Dentro da mesma categoria, o mais urgente (maior valor se atrasado, menor valor se próximo)
+      if (a.status === 'Atrasado') return b.value - a.value;
+      return a.value - b.value;
+    });
+
+    return allAlerts[0];
+  }, [mileageAlerts, dateAlerts]);
+  
   const efficiencyValue = averageEfficiency !== null 
     ? `${averageEfficiency} km/l` 
     : 'N/A';
@@ -49,6 +76,27 @@ const DashboardPage: React.FC = () => {
   const nextMaintenanceDescription = nextMaintenance
     ? `${nextMaintenance.type} em ${new Date(nextMaintenance.date).toLocaleDateString('pt-BR')}`
     : 'Adicione um agendamento';
+    
+  const handleEditMaintenance = (record: MaintenanceRecord) => {
+    // Navega para a página de manutenção e abre o modal de edição (simulado)
+    navigate('/maintenance', { state: { editRecordId: record.id } });
+  };
+  
+  const handleAlertClick = (alert: MaintenanceAlert) => {
+    // Encontra o registro original para edição
+    const originalRecord = maintenanceRecords.find(r => r.id === alert.id.split('-')[0]);
+    
+    if (originalRecord) {
+        // Se for um alerta de repetição, sugerimos criar um novo registro baseado no antigo
+        // Mas para simplificar, vamos apenas abrir o formulário de edição do registro original
+        // para que o usuário possa criar um novo a partir dele ou marcar como concluído.
+        
+        // Para o propósito de demonstração, vamos apenas navegar para a página de manutenção.
+        // Em uma aplicação real, você passaria o ID para abrir o modal.
+        navigate('/maintenance');
+    }
+  };
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -133,8 +181,8 @@ const DashboardPage: React.FC = () => {
                       <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
                       <span className="truncate">
                         {alert.type}: {alert.status === 'Atrasado' 
-                          ? `Atrasado por ${alert.kmRemaining.toLocaleString('pt-BR')} km` 
-                          : `Próximo em ${alert.kmRemaining.toLocaleString('pt-BR')} km`}
+                          ? `Atrasado por ${alert.value.toLocaleString('pt-BR')} km` 
+                          : `Próximo em ${alert.value.toLocaleString('pt-BR')} km`}
                       </span>
                     </li>
                   ))}
@@ -148,8 +196,8 @@ const DashboardPage: React.FC = () => {
                       <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
                       <span className="truncate">
                         {alert.type}: {alert.status === 'Atrasado' 
-                          ? `Vencido há ${alert.daysRemaining} dias (Data: ${new Date(alert.nextDate).toLocaleDateString('pt-BR')})` 
-                          : `Vence em ${alert.daysRemaining} dias (Data: ${new Date(alert.nextDate).toLocaleDateString('pt-BR')})`}
+                          ? `Vencido há ${alert.value} dias (Data: ${new Date(alert.nextTarget as string).toLocaleDateString('pt-BR')})` 
+                          : `Vence em ${alert.value} dias (Data: ${new Date(alert.nextTarget as string).toLocaleDateString('pt-BR')})`}
                       </span>
                     </li>
                   ))}
@@ -179,6 +227,24 @@ const DashboardPage: React.FC = () => {
         <div className="lg:col-span-2 grid gap-4 md:grid-cols-2">
           <MonthlySpendingChart />
           <FuelEfficiencyChart fuelingRecords={fuelingRecords} />
+        </div>
+      </div>
+      
+      {/* Cartão de Próxima Manutenção (Atualizado para usar o alerta mais urgente como fallback) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-1">
+          <UpcomingMaintenanceCard 
+            record={nextMaintenance} // Mantém o foco em Agendado/Pendente
+            fallbackAlert={nextMaintenance ? null : mostUrgentAlert} // Usa alerta de repetição se não houver agendamento/pendente
+            onEdit={handleEditMaintenance} 
+            onAlertClick={handleAlertClick}
+          />
+        </div>
+        {/* Placeholder para outras métricas ou filtros */}
+        <div className="md:col-span-2 flex items-center justify-center bg-gray-50 border border-dashed rounded-lg dark:bg-gray-800 dark:border-gray-700 p-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+                Espaço para filtros ou estatísticas rápidas de manutenção.
+            </p>
         </div>
       </div>
     </div>

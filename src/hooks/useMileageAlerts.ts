@@ -1,13 +1,6 @@
 import { useMemo } from 'react';
 import { MaintenanceRecord } from '@/types/maintenance';
-
-interface MileageAlert {
-  id: string;
-  type: string;
-  nextMileage: number;
-  status: 'Atrasado' | 'Próximo' | 'Agendado';
-  kmRemaining: number;
-}
+import { MaintenanceAlert } from '@/types/alert';
 
 const ALERT_THRESHOLD_KM = 1000; // Alerta se estiver a 1000km ou menos
 
@@ -30,17 +23,18 @@ export const useMileageAlerts = (
       r.status === 'Concluído' && r.nextMileage && r.nextMileage <= currentMileage
     );
 
-    const mileageAlerts: MileageAlert[] = [];
+    const mileageAlerts: MaintenanceAlert[] = [];
 
     // Adicionar alertas atrasados
     overdueRecords.forEach(r => {
         const typeName = r.type === 'Outro' && r.customType ? r.customType : r.type;
         mileageAlerts.push({
-            id: r.id,
+            id: r.id + '-mileage',
             type: typeName,
-            nextMileage: r.nextMileage!,
+            nextTarget: r.nextMileage!,
             status: 'Atrasado',
-            kmRemaining: currentMileage - r.nextMileage!, // Distância que passou
+            value: currentMileage - r.nextMileage!, // Distância que passou
+            unit: 'km',
         });
     });
 
@@ -51,11 +45,12 @@ export const useMileageAlerts = (
 
       if (kmRemaining <= ALERT_THRESHOLD_KM) {
         mileageAlerts.push({
-          id: r.id,
+          id: r.id + '-mileage',
           type: typeName,
-          nextMileage: r.nextMileage!,
+          nextTarget: r.nextMileage!,
           status: 'Próximo',
-          kmRemaining: kmRemaining,
+          value: kmRemaining,
+          unit: 'km',
         });
       }
     });
@@ -65,11 +60,11 @@ export const useMileageAlerts = (
         if (a.status === 'Atrasado' && b.status !== 'Atrasado') return -1;
         if (a.status !== 'Atrasado' && b.status === 'Atrasado') return 1;
         
-        // Se ambos são atrasados, o que passou mais tempo (maior kmRemaining) vem primeiro
-        if (a.status === 'Atrasado' && b.status === 'Atrasado') return b.kmRemaining - a.kmRemaining;
+        // Se ambos são atrasados, o que passou mais tempo (maior value) vem primeiro
+        if (a.status === 'Atrasado' && b.status === 'Atrasado') return b.value - a.value;
 
-        // Se ambos são próximos, o que está mais perto (menor kmRemaining) vem primeiro
-        return a.kmRemaining - b.kmRemaining;
+        // Se ambos são próximos, o que está mais perto (menor value) vem primeiro
+        return a.value - b.value;
     });
 
     return {
