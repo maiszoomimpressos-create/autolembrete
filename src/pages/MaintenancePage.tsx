@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Wrench, Loader2 } from 'lucide-react';
 import MaintenanceTable from '@/components/MaintenanceTable';
 import MaintenanceFormDialog from '@/components/MaintenanceFormDialog';
 import { MaintenanceRecord } from '@/types/maintenance';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError } from '@/utils/toast';
 import { useMaintenanceRecords } from '@/hooks/useMaintenanceRecords';
 import UpcomingMaintenanceCard from '@/components/UpcomingMaintenanceCard';
 import { useUpcomingMaintenance } from '@/hooks/useUpcomingMaintenance';
@@ -14,7 +14,6 @@ import { useLocation } from 'react-router-dom';
 import { useMileageAlerts } from '@/hooks/useMileageAlerts';
 import { useDateAlerts } from '@/hooks/useDateAlerts';
 import { MaintenanceAlert } from '@/types/alert';
-import { useMemo } from 'react'; // Importando useMemo
 
 const MaintenancePage: React.FC = () => {
   const location = useLocation();
@@ -72,16 +71,7 @@ const MaintenancePage: React.FC = () => {
 
 
   const handleAddOrEdit = async (data: Omit<MaintenanceRecord, 'id'>) => {
-    try {
-        await addOrUpdateRecord(data, recordToEdit?.id);
-        if (recordToEdit) {
-            showSuccess('Manutenção atualizada com sucesso!');
-        } else {
-            showSuccess('Nova manutenção adicionada!');
-        }
-    } catch (e) {
-        // Erro já tratado no hook de mutação, mas mantemos o try/catch para consistência
-    }
+    await addOrUpdateRecord(data, recordToEdit?.id);
     setRecordToEdit(null);
     setAlertToCreateFrom(null);
     setIsDialogOpen(false);
@@ -96,7 +86,6 @@ const MaintenancePage: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja deletar este registro de manutenção?')) {
       await deleteRecord(id);
-      showSuccess('Registro de manutenção deletado.');
     }
   };
   
@@ -110,7 +99,6 @@ const MaintenancePage: React.FC = () => {
     
     // Se já tiver KM e Custo, podemos concluir diretamente
     await addOrUpdateRecord({ ...record, status: 'Concluído' }, record.id);
-    showSuccess(`Manutenção '${record.type}' marcada como concluída!`);
   };
 
   const handleOpenDialog = () => {
@@ -120,7 +108,7 @@ const MaintenancePage: React.FC = () => {
   };
   
   const handleAlertClick = (alert: MaintenanceAlert) => {
-      // Ao clicar em um alerta de repetição, abrimos o modal para criar um NOVO registro
+      // Ao clicar em um alerta, abrimos o modal para criar um NOVO registro
       setAlertToCreateFrom(alert);
       setRecordToEdit(null);
       setIsDialogOpen(true);
@@ -160,7 +148,7 @@ const MaintenancePage: React.FC = () => {
         <div className="md:col-span-1">
           <UpcomingMaintenanceCard 
             record={upcomingRecord} 
-            fallbackAlert={upcomingRecord ? null : mostUrgentAlert} // Usa alerta de repetição se não houver agendamento/pendente
+            fallbackAlert={upcomingRecord ? null : mostUrgentAlert}
             onEdit={handleEdit} 
             onAlertClick={handleAlertClick}
           />

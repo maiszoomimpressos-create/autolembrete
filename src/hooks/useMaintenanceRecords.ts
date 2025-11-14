@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { MaintenanceRecord } from '@/types/maintenance';
 import { useMaintenanceRecordsQuery, useMaintenanceMutations } from '@/integrations/supabase/maintenance';
+import { showSuccess } from '@/utils/toast'; // Importando showSuccess
 
 // Este hook agora é um wrapper que usa react-query para buscar e mutar dados no Supabase.
 export const useMaintenanceRecords = () => {
@@ -22,14 +23,17 @@ export const useMaintenanceRecords = () => {
     if (id) {
       // Edição
       await updateRecord({ ...recordToSave, id } as MaintenanceRecord);
+      showSuccess('Manutenção atualizada com sucesso!');
     } else {
       // Adição
       await addRecord(recordToSave);
+      showSuccess('Nova manutenção adicionada!');
     }
   }, [addRecord, updateRecord]);
 
   const handleDeleteRecord = useCallback(async (id: string) => {
     await deleteRecord(id);
+    showSuccess('Registro de manutenção deletado.');
   }, [deleteRecord]);
 
   return {
