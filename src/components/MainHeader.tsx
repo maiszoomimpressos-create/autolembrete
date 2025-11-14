@@ -138,11 +138,11 @@ const MainHeader: React.FC = () => {
     <header className="bg-white shadow-sm border-b dark:bg-gray-900 dark:border-gray-800 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+          <div className="flex items-center space-x-6 cursor-pointer" onClick={() => navigate('/dashboard')}>
             <Car className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Autolembrete</h1>
           </div>
-          <nav className="hidden md:flex space-x-2 lg:space-x-8">
+          <nav className="hidden md:flex space-x-8">
             {navItems.map((item) => {
               const isActive = location.pathname.startsWith(item.path) && item.path !== '/';
               const Icon = item.icon;
