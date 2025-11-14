@@ -2,18 +2,19 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Car, Gauge, Calendar, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useVehicle } from '@/hooks/useVehicle';
 
 interface VehicleSummaryProps {
   currentMileage: number;
 }
 
 const VehicleSummary: React.FC<VehicleSummaryProps> = ({ currentMileage }) => {
-  // Dados simulados do veículo
-  const vehicle = {
-    name: "Toyota Corolla",
-    year: 2020,
-    plate: "ABC-1234",
-    lastService: "2024-05-10",
+  const navigate = useNavigate();
+  const { vehicle } = useVehicle();
+
+  const handleEditClick = () => {
+    navigate('/settings/vehicle');
   };
 
   return (
@@ -23,7 +24,7 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ currentMileage }) => {
           <Car className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           <span>Veículo Principal</span>
         </CardTitle>
-        <Button variant="outline" size="sm" className="dark:hover:bg-gray-700">
+        <Button variant="outline" size="sm" className="dark:hover:bg-gray-700" onClick={handleEditClick}>
           <Edit className="w-4 h-4 mr-2" />
           Editar
         </Button>
@@ -31,7 +32,7 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ currentMileage }) => {
       <CardContent className="grid md:grid-cols-3 gap-4">
         <div className="space-y-1">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Modelo</p>
-          <p className="text-lg font-bold dark:text-white">{vehicle.name} ({vehicle.year})</p>
+          <p className="text-lg font-bold dark:text-white">{vehicle.model} ({vehicle.year})</p>
         </div>
         <div className="space-y-1">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Placa</p>
