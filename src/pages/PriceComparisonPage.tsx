@@ -49,7 +49,7 @@ const PriceComparisonPage: React.FC = () => {
         setIsLoadingLocation(false);
         showError(errorMessage);
       },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // Aumentado o timeout para 10 segundos
     );
   };
 

@@ -82,21 +82,24 @@ const NearbyStationsMap: React.FC<NearbyStationsMapProps> = ({ stations, userLoc
         }}
       >
         {/* Marcador da Localização do Usuário */}
-        <Marker 
-            position={userLocation} 
-            icon={{
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 8,
-                fillColor: "#3b82f6", // blue-500
-                fillOpacity: 1,
-                strokeWeight: 2,
-                strokeColor: "#ffffff",
-            }}
-            title="Sua Localização"
-        />
+        {/* Usamos a verificação global 'google' para garantir que os símbolos estejam carregados */}
+        {typeof google !== 'undefined' && (
+            <Marker 
+                position={userLocation} 
+                icon={{
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 8,
+                    fillColor: "#3b82f6", // blue-500
+                    fillOpacity: 1,
+                    strokeWeight: 2,
+                    strokeColor: "#ffffff",
+                }}
+                title="Sua Localização"
+            />
+        )}
 
         {/* Marcadores dos Postos de Gasolina */}
-        {stations.map((station) => {
+        {typeof google !== 'undefined' && stations.map((station) => {
           if (!station.latitude || !station.longitude) return null;
           
           const position = { lat: station.latitude, lng: station.longitude };
