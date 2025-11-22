@@ -296,7 +296,7 @@ const MileageInputDialog: React.FC<MileageInputDialogProps> = ({ isOpen, onOpenC
                         <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                           <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
-                        <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                        <SelectContent className="dark:bg-gray-800 dark:border-gray-700 z-[100]">
                           {FUEL_TYPES.map(type => (
                             <SelectItem key={type} value={type}>{type}</SelectItem>
                           ))}
