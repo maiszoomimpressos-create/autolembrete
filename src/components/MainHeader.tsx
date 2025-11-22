@@ -61,6 +61,9 @@ const MainHeader: React.FC = () => {
   const { user, signOut, isAdmin } = useSession();
   const { profile } = useProfile();
   
+  // Estado para controlar o menu mobile (Sheet)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
   // Hooks de Veículo
   const { vehicle: activeVehicle, vehicles, isLoading: isLoadingVehicle } = useVehicle();
   const { setActiveVehicle } = useActiveVehicle();
@@ -127,6 +130,7 @@ const MainHeader: React.FC = () => {
                     onClick={() => {
                         navigate(item.path);
                         onLinkClick();
+                        setIsMobileMenuOpen(false); // FECHA O MENU MOBILE
                     }}
                 >
                     <Icon className="w-4 h-4 mr-2" />
@@ -306,7 +310,7 @@ const MainHeader: React.FC = () => {
             </div>
             
             {/* Menu Hamburger (Mobile - Visível em telas menores que MD) */}
-            <Sheet>
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild className="md:hidden">
                     <Button variant="ghost" size="icon" className="h-9 w-9">
                         <Menu className="w-6 h-6 dark:text-white" />
@@ -323,7 +327,8 @@ const MainHeader: React.FC = () => {
                         
                         {/* Links de Navegação (Mobile) */}
                         <div className="flex-grow overflow-y-auto">
-                            {renderNavLinks(() => {}, true)}
+                            {/* Passamos uma função vazia como onLinkClick, pois o fechamento é tratado no onClick do Button */}
+                            {renderNavLinks(() => {}, true)} 
                             
                             {/* Seletor de Veículo (Mobile) */}
                             <div className="p-4 border-t dark:border-gray-800">
@@ -339,6 +344,7 @@ const MainHeader: React.FC = () => {
                                       className="w-full justify-start text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:text-red-400"
                                       onClick={() => {
                                           navigate('/master-admin');
+                                          setIsMobileMenuOpen(false); // FECHA O MENU MOBILE
                                       }}
                                     >
                                       <Shield className="w-4 h-4 mr-2" />
@@ -354,6 +360,7 @@ const MainHeader: React.FC = () => {
                                   className="w-full justify-start text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                                   onClick={() => {
                                       navigate('/settings');
+                                      setIsMobileMenuOpen(false); // FECHA O MENU MOBILE
                                   }}
                                 >
                                   <Settings className="w-4 h-4 mr-2" />
@@ -377,7 +384,10 @@ const MainHeader: React.FC = () => {
                             <Button
                                 variant="outline"
                                 className="w-full justify-start text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:text-red-400 dark:border-red-900"
-                                onClick={() => handleMenuItemClick('/logout')}
+                                onClick={() => {
+                                    handleMenuItemClick('/logout');
+                                    setIsMobileMenuOpen(false); // FECHA O MENU MOBILE
+                                }}
                             >
                                 <LogOut className="w-4 h-4 mr-2" />
                                 Sair
