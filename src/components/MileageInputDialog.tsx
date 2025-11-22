@@ -198,7 +198,7 @@ const MileageInputDialog: React.FC<MileageInputDialogProps> = ({ isOpen, onOpenC
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] dark:bg-gray-900 dark:text-white">
+      <DialogContent className="sm:max-w-[425px] dark:bg-gray-900 dark:text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Gauge className="w-5 h-5 text-blue-500" />
